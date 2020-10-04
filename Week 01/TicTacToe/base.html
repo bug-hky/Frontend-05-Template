@@ -1,0 +1,50 @@
+<style>
+    .cell {
+        width: 100px;
+        height: 100px;
+        background: green;
+        display: inline-block;
+        border: solid 1px white;
+        line-height: 80px;
+        font-size: 80px;
+        vertical-align: middle;
+        text-align: center;
+        color: red;
+    }
+</style>
+
+<div id="toe"></div>
+
+<script>
+    let pattern = [
+        [2, 0, 0],
+        [0, 1, 0],
+        [0, 0, 0]
+    ]
+
+    let color = 1
+
+    function show () {
+        let toe = document.getElementById('toe')
+        toe.innerHTML = ''
+        for (let i = 0; i < 3; i++) {
+            for (let j = 0; j < 3; j++) {
+                let cell = document.createElement('div')
+                cell.classList.add('cell')
+                cell.innerText = pattern[i][j] === 2 ? 'o' :
+                    pattern[i][j] === 1 ? 'x' : ''
+                cell.addEventListener('click', () => move(i, j))
+                toe.appendChild(cell)
+            }
+            toe.appendChild(document.createElement('br'))
+        }
+    }
+
+    function move (y, x) {
+        pattern[y][x] = color
+        color = 3 - color
+        show()
+    }
+
+    show()
+</script>

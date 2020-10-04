@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Promise Demo</title>
+    <style>
+        .light-bar {
+            height: 100px;
+            width: 400px;
+            border-radius: 60px;
+            background: #666;
+            list-style: none;
+            display: flex;
+            flex-flow: row nowrap;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+        }
+        .light {
+            height: 90px;
+            width: 90px;
+            border-radius: 50%;
+            background: #ccc;
+        }
+        .red.high-light {
+            background: red;
+        }
+        .yellow.high-light {
+            background: yellow;
+        }
+        .green.high-light {
+            background: green;
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <ul class="light-bar">
+        </ul>
+    </main>
+</body>
+<script>
+    {
+        // 初始化
+        function init () {
+            let initData = [
+                { class: 'red' },
+                { class: 'green' },
+                { class: 'yellow' }
+            ]
+            for ( let i = 0; i < initData.length; i++ ) {
+                let lightBar = document.createElement('li')
+                document.getElementsByClassName('light-bar')[0].appendChild(lightBar)
+                lightBar.classList.add('light')
+                lightBar.classList.add(initData[i].class)
+            }
+        }
+        // 移除高亮状态
+        function removeStatus () {
+            let lights = document.getElementsByClassName('light')
+            for ( let i = 0; i < lights.length; i++ ) {
+                lights[i].classList.remove('high-light')
+            }
+        }
+        // 点亮高亮状态
+        function highLight (className) {
+            color = className
+            removeStatus()
+            document.getElementsByClassName(className)[0].classList.add('high-light')
+        }
+        // 沉睡函数
+        function sleep (time) {
+            return new Promise((resolve, reject) => {
+                setTimeout(resolve, time)
+            })
+        }
+        // MAIN
+        function trafficLight () {
+            highLight('green')
+            sleep(1000)
+                .then(() => {
+                    highLight('yellow')
+                    return sleep(200)
+                })
+                .then(() => {
+                    highLight('red')
+                    return sleep(500)
+                })
+                .then(trafficLight)
+        }
+        let color = null
+        init() // 初始化DOM
+        trafficLight()
+    }
+</script>
+</html>

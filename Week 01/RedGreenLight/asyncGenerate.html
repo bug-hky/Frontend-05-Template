@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Generator Demo</title>
+    <style>
+        .light-bar {
+            height: 100px;
+            width: 400px;
+            border-radius: 60px;
+            background: #666;
+            list-style: none;
+            display: flex;
+            flex-flow: row nowrap;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+        }
+        .light {
+            height: 90px;
+            width: 90px;
+            border-radius: 50%;
+            background: #ccc;
+        }
+        .red.high-light {
+            background: red;
+        }
+        .yellow.high-light {
+            background: yellow;
+        }
+        .green.high-light {
+            background: green;
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <ul class="light-bar">
+        </ul>
+    </main>
+</body>
+<script>
+        // 沉睡函数
+        function sleep (time) {
+            return new Promise((resolve, reject) => {
+                setTimeout(resolve, time)
+            })
+        }
+
+        async function* counter () {
+            let i = 0
+            while(true) {
+                await sleep(1000)
+                yield i++
+            }
+        }
+
+        (async function () {
+            for await (let v of counter()) {
+                console.info(v)
+            }
+        })()
+</script>
+</html>
