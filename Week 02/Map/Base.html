@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Base Map</title>
+    <style>
+        body {
+            margin: 0 5px;
+        }
+        .cell {
+            width: 8px;
+            height: 8px;
+            background: gray;
+            display: inline-block;
+            border-bottom: solid 1px white;
+            border-right: solid 1px white;
+        }
+        #map {
+            width: 900px;
+            font-size: 0;
+        }
+        .m-b-5 {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+<button class="m-b-5" onclick="reset()">refresh</button>
+<button class="m-b-5" onclick="save()">save</button>
+<div id="map"></div>
+</body>
+<script>
+    let isReset = false
+    let map = Array(10000).fill(0)
+    function init () {
+        if (isReset) {
+            map = Array(10000).fill(0)
+        } else {
+            useSavedMap()
+        }
+        let container = document.getElementById('map')
+        container.innerHTML = ''
+        for (let y = 0; y < 100; y++) {
+            for (let x = 0; x < 100; x++) {
+                let cell = document.createElement('div')
+                cell.classList.add('cell')
+                if (map[y * 100 + x] === 1)
+                    cell.style.backgroundColor = 'black'
+                cell.addEventListener('mousemove', () => {
+                    if (mousedown) {
+                        if (clear) {
+                            cell.style.backgroundColor = ''
+                            map[y * 100 + x] = 0
+                        } else {
+                            cell.style.backgroundColor = 'black'
+                            map[y * 100 + x] = 1
+                        }
+                    }
+                })
+                container.appendChild(cell)
+            }
+        }
+    }
+
+    let mousedown = false
+    let clear = false
+    document.addEventListener('mousedown', e => {
+        mousedown = true
+        clear = (e.which === 3)
+    })
+    document.addEventListener('mouseup', () => { mousedown = false })
+    document.addEventListener('contextmenu', e => e.preventDefault())
+
+    function reset () {
+        isReset = true
+        init()
+    }
+
+    function useSavedMap () {
+        let savedMap = JSON.parse(window.sessionStorage.getItem('map'))
+        if (savedMap) map = savedMap
+    }
+
+    function save () {
+        window.sessionStorage.setItem('map', JSON.stringify(map))
+    }
+
+    init()
+</script>
+</html>

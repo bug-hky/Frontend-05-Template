@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        .cell {
+            width: 100px;
+            height: 100px;
+            background: green;
+            display: inline-block;
+            border: solid 1px white;
+            line-height: 80px;
+            font-size: 80px;
+            vertical-align: middle;
+            text-align: center;
+            color: red;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div id="pattern"></div>
+</body>
+<script>
+    {
+        const PLAYER_A = 1
+        const PLAYER_B = 2
+        let goBang = [
+            0, 0, 2, 0, 0,
+            0, 2, 1, 1, 0,
+            0, 1, 1, 2, 0,
+            0, 2, 1, 2, 0,
+            0, 0, 2, 0, 0
+        ]
+        let step = PLAYER_A
+
+        function clear () {
+            step = null
+            goBang = new Array(25).fill(0)
+            init()
+        }
+
+        function playerFormatter (value) {
+            return value === PLAYER_A ? 'o' :
+                value === PLAYER_B ? 'x' : ''
+        }
+
+        function playerChange (step) {
+            return step === PLAYER_A ? PLAYER_B : PLAYER_A
+        }
+
+        function clone (data) {
+            // return Object.create(data)
+            return JSON.parse(JSON.stringify(data))
+        }
+
+        function init() {
+            let pattern = document.getElementById('pattern')
+            pattern.innerHTML = ''
+            for (let i = 0; i < 5; i++) {
+                for (let j = 0; j < 5; j++) {
+                    let cellItem = document.createElement('div')
+                    cellItem.classList.add('cell')
+                    cellItem.innerText = playerFormatter(goBang[i * 5 + j])
+                    cellItem.addEventListener('click', () => {
+                        move(i, j)
+                    })
+                    pattern.appendChild(cellItem)
+                }
+                pattern.appendChild(document.createElement('br'))
+            }
+        }
+
+        function move(i, j) {
+            if (goBang[i * 5 + j]) return
+            goBang[i * 5 + j] = step
+            if (checkWin(goBang, step)) {
+                alert(playerFormatter(step) + ' is winner!!')
+                clear()
+            }
+            step = playerChange(step)
+            init()
+            console.info(bestChoice(goBang, step))
+            // if (willWin(goBang, step)) {
+            //     console.info(playerFormatter(willWin(goBang, step)) + ' will win!!')
+            // }
+        }
+
+        function checkWin (goBang, step) {
+            // row check
+            {
+                for (let i = 0; i < 5; i++) {
+                    let win = true
+                    for (let j = 0; j < 5; j++) {
+                        if (goBang[i * 5 + j] !== step) win = false
+                    }
+                    if (win) return true
+                }
+            }
+            // column check
+            {
+                for (let i = 0; i < 5; i++) {
+                    let win = true
+                    for (let j = 0; j < 5; j++) {
+                        if (goBang[j * 5 + i] !== step) win = false
+                    }
+                    if (win) return true
+                }
+            }
+            // slash check
+            {
+                let win = true
+                for (let i = 0; i < 5; i++) {
+                    if (goBang[i * 5 + i] !== step) win = false
+                }
+                if (win) return true
+            }
+            // reverse slash check
+            {
+                let win = true
+                for (let i = 0; i < 5; i++) {
+                    if (goBang[(i + 1) * 5 - (i + 1)] !== step) win = false
+                }
+                if (win) return true
+            }
+            return false
+        }
+
+        function willWin (goBang, step) {
+            for (let i = 0; i < 5; i++) {
+                for (let j = 0; j < 5; j++) {
+                    if (goBang[i * 5 + j]) continue
+                    let cloneGoBang = clone(goBang)
+                    cloneGoBang[i * 5 + j] = step
+                    if (checkWin(cloneGoBang, step)) {
+                        return [j, i]
+                    }
+                }
+            }
+            return null
+        }
+
+        function bestChoice (goBang, step) {
+            let p = willWin(goBang, step)
+            if (p) {
+                return {
+                    point: p,
+                    result: 1
+                }
+            }
+            let result = -2
+            let point = null
+            outer:for (let i = 0; i < 5; i++) {
+                for (let j = 0; j < 5; j++) {
+                    if (goBang[i * 5 + j]) continue
+                    let cloneData = clone(goBang)
+                    cloneData[i * 5 + j] = step
+                    let opp = bestChoice(cloneData, 3 - step)
+                    console.info('bestChoice', opp)
+                    if (-opp.result > result) {
+                        point = [j, i]
+                        result = - opp.result
+                    }
+                    if (result === 1) break outer
+                }
+            }
+            return {
+                point: point,
+                result: point ? result : 0
+            }
+        }
+
+        init()
+    }
+</script>
+</html>

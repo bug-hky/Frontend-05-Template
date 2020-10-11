@@ -17,8 +17,8 @@
 
 <script>
     let pattern = [
-        0, 2, 0,
-        0, 1, 0,
+        0, 0, 0,
+        0, 0, 0,
         0, 0, 0
     ]
 
@@ -60,7 +60,7 @@
             return
         }
         color = 3 - color
-        console.info(theBestChoice(pattern, color))
+        // console.info(theBestChoice(pattern, color))
         show()
         // if (willWin(pattern, color)) {
         //     console.info(color === 2 ? 'o will winner' : 'x will winner')
@@ -143,7 +143,7 @@
                 let cloneData = clone(pattern)
                 cloneData[i * 3 + j] = color
                 if (check(cloneData, color)) {
-                    return [i, j]
+                    return [j, i]
                 }
             }
         }
@@ -151,8 +151,8 @@
     }
 
     function theBestChoice (pattern, color) {
-        let p = willWin(pattern, color)
-        if (p) {
+        let p
+        if (p = willWin(pattern, color)) {
             return {
                 point: p,
                 result: 1
@@ -160,17 +160,20 @@
         }
         let result = -2
         let point = null
-        outer:for (let i = 0; i < 3; i++) {
+        outer:
+        for (let i = 0; i < 3; i++) {
             for (let j = 0; j < 3; j++) {
                 if (pattern[i * 3 + j]) continue
                 let cloneData = clone(pattern)
                 cloneData[i * 3 + j] = color
-                let opp = theBestChoice(cloneData, 3- color)
+                let opp = theBestChoice(cloneData, 3 - color)
                 if (- opp.result > result) {
                     point = [j, i]
                     result = - opp.result
                 }
-                if (result === 1) break outer
+                if (result > 0) {
+                    break outer
+                }
             }
         }
         return {
