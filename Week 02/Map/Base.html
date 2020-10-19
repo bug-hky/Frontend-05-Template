@@ -30,15 +30,42 @@
 <div id="map"></div>
 </body>
 <script>
+    class Sorted {
+         constructor (data, compare) {
+             this.data = data.slice()
+             this.compare = compare || ((a, b) => a - b)
+         }
+         take () {
+             if (!this.data.length) return
+             let min = this.data[0]
+             let index = 0
+
+             for (let i = 1; i < this.data.length; i++) {
+                 if (this.compare(min, this.data[i]) > 0) {
+                     min = this.data[i]
+                     index = i
+                 }
+             }
+
+             this.data[index] = this.data[this.data.length - 1]
+             this.data.pop()
+             return min
+         }
+
+         give (d) {
+            this.data.push(d)
+         }
+    }
+
     let isReset = false
     let map = Array(10000).fill(0)
+    let container = document.getElementById('map')
     function init () {
         if (isReset) {
             map = Array(10000).fill(0)
         } else {
             useSavedMap()
         }
-        let container = document.getElementById('map')
         container.innerHTML = ''
         for (let y = 0; y < 100; y++) {
             for (let x = 0; x < 100; x++) {
@@ -76,6 +103,12 @@
         init()
     }
 
+    function sleep (time) {
+        return new Promise((resolve) => {
+            setTimeout(resolve, time)
+        })
+    }
+
     function useSavedMap () {
         let savedMap = JSON.parse(window.sessionStorage.getItem('map'))
         if (savedMap) map = savedMap
@@ -83,6 +116,54 @@
 
     function save () {
         window.sessionStorage.setItem('map', JSON.stringify(map))
+    }
+
+    async function findPath (map, start, end) {
+        let road = Object.create(map)
+        let queue = new Sorted([start], (a, b) => distance(a) - distance(b))
+        // let queue = [start]
+        async function insert (x, y, pre) {
+            if (x < 0 || x >= 100 || y < 0 || y >= 100) return
+            if (road[y * 100 + x]) return
+            await sleep(2)
+            container.children[y * 100 + x].style.backgroundColor = 'lightblue'
+            road[y * 100 + x] = pre
+            queue.give([x, y])
+        }
+
+        function distance (point) {
+            return (point[0] - end[0]) ** 2 + (point[1] - end[1]) ** 2
+        }
+
+        while (queue.data.length) {
+            let [x, y] = queue.take()
+            console.info(x, y)
+            if (x === end[0] && y === end[1]) {
+                let path = []
+                while (x !== start[0] || y !== start[1]) {
+                    console.info('road[y * 100 + x]', road[y * 100 + x], [x, y])
+                    path.push(map[y * 100 + x])
+                    // [x, y] = road[y * 100 + x] 这个解构赋值似乎有点问题，不能直接执行
+                    let oldIndex = y * 100 + x
+                    x = road[oldIndex][0]
+                    y = road[oldIndex][1]
+                    await sleep(2)
+                    container.children[y * 100 + x].style.backgroundColor = 'red'
+                }
+                return path
+            }
+            // 正向
+            await insert(x - 1, y, [x, y])
+            await insert(x + 1, y, [x, y])
+            await insert(x, y - 1, [x, y])
+            await insert(x, y + 1, [x, y])
+            // 斜向
+            await insert(x - 1, y - 1, [x, y])
+            await insert(x + 1, y - 1, [x, y])
+            await insert(x - 1, y + 1, [x, y])
+            await insert(x + 1, y + 1, [x, y])
+        }
+        return null
     }
 
     init()
