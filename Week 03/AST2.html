@@ -15,22 +15,33 @@
             setTimeout(resolve, t)
         })
     }
-    async function tokenize (source) {
+    function* tokenize (source) {
         let result = null
         let lastIndex = 0
         while (true) {
+            lastIndex = regexp.lastIndex
             result = regexp.exec(source)
             if (!result) break
+            if (regexp.lastIndex - lastIndex > result[0].length) break
+            let token = {
+                type: null,
+                value: null
+            }
             for (let i = 1; i <= dictionary.length; i++) {
                 if (result[i]) {
-                    await sleep(1000)
-                    console.log(dictionary[i - 1])
+                    // console.log(dictionary[i - 1])
+                    token.type = dictionary[i - 1]
                 }
             }
-            console.info(result)
+            token.value = result[0]
+            // console.info(result)
+            yield token
         }
+        yield 'EOF'
     }
 
-    tokenize('1024 + 55 * 44 / 6')
+    for (let token of tokenize('1024 + 55 * 44 / 6')) {
+        console.info(token)
+    }
 </script>
 </html>
