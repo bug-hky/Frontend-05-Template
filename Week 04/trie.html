@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+<body>
+<script>
+    let $ = Symbol('$')
+    class Trie {
+        constructor () {
+            this.root = Object.create(null)
+        }
+        insert (word) {
+            let node = this.root
+            for (let l of word) {
+                if (!node[l])
+                    node[l] = Object.create(null)
+                    node = node[l]
+            }
+            if (!node[$])
+                node[$] = 0
+
+            node[$] ++
+        }
+        most () {
+            let max = 0
+            let maxWord = null
+            let visit = (node, word) => {
+                if (node[$] && node[$] > max) {
+                    max = node[$]
+                    maxWord = word
+                }
+                for (let p in node) {
+                    visit(node[p], word + p)
+                }
+            }
+            visit(this.root, '')
+            console.info(maxWord, max)
+        }
+    }
+
+    function randomWord (length) {
+        var s = ''
+        for(let i = 0; i < length; i ++)
+            // charCodeAt方法返回 0 到 65535 之间的整数，表示给定索引处的 UTF-16 代码单元，
+            // 超出字符串长度的index返回NaN
+            s += String.fromCharCode(Math.random() * 10 + 'a'.charCodeAt(0))
+        return s
+    }
+
+    let trie = new Trie()
+    let arr = []
+    for (let i = 0; i < 10000; i++) {
+        trie.insert(randomWord(4))
+        arr.push(randomWord(4))
+    }
+    console.info(arr)
+    console.info(trie)
+    console.info(trie.most())
+</script>
+</body>
+</html>
