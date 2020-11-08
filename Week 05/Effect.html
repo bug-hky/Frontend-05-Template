@@ -1,0 +1,39 @@
+<script>
+    let callbacks = []
+
+    let obj = {
+        a: 1,
+        b: 2
+    }
+
+    effect(() => {
+        console.info('a effect trigger!', po.a)
+    })
+
+    function effect (callback) {
+        callbacks.push(callback)
+    }
+
+    function reactive (object) {
+        return new Proxy(object, {
+            set (obj, prop, val) {
+                obj[prop] = val
+                for (let callback of callbacks) {
+                    callback()
+                }
+                console.info(obj, prop, val)
+                return obj[prop]
+            },
+            get (obj, prop) {
+                console.info(obj, prop)
+                return obj[prop]
+            }
+        })
+    }
+
+    let po = reactive(obj)
+
+    po.a = 3
+    po.x = 5
+    po.b = 6
+</script>

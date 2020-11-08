@@ -1,0 +1,17 @@
+<script>
+    let obj = {
+        a: 1,
+        b: 2
+    }
+
+    let po = new Proxy(obj, {
+       set (obj, prop, value) {
+           console.info(obj, prop, value)
+       }
+    })
+
+    po.a = 3
+    po.x = 5
+    po.b = 6
+    console.info(obj)
+</script>

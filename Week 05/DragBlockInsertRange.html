@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Drag</title>
+    <style>
+        .drag-box {
+            width: 100px;
+            height: 100px;
+            background-color: pink;
+        }
+        .text-container {
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+<div class="text-container">
+    文字 文字 文字 文字 文字 文字 文字 文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字 文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字 文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字 文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字 文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字 文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字 文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字 文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字 文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字 文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字 文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字 文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字 文字 文字 文字 文字 文字 文字 文字
+    文字 文字 文字 文字 文字 文字 文字 文字 文字 文字 文字 文字 文字 文字
+</div>
+<div class="drag-box"></div>
+<script>
+    document.addEventListener('selectstart', event => event.preventDefault())
+    let dragBox = document.getElementsByClassName('drag-box')[0]
+    let baseX = 0, baseY = 0
+    dragBox.addEventListener('mousedown', function(event){
+        let startX = event.clientX, startY = event.clientY
+        let up = event => {
+            baseX = baseX + event.clientX - startX
+            baseY = baseY + event.clientY - startY
+            document.removeEventListener('mouseup', up)
+            document.removeEventListener('mousemove', move)
+        }
+        let move = event => {
+            // dragBox.style.transform = `translate(${baseX + event.clientX - startX}px, ${baseY + event.clientY - startY}px)`
+            let range = getNearest(event.clientX, event.clientY)
+            range.insertNode(dragBox)
+        }
+        document.addEventListener('mouseup', up)
+        document.addEventListener('mousemove', move)
+    })
+
+    let ranges = []
+    let contentWrap = document.getElementsByClassName('text-container')[0]
+    for (let i = 0; i < contentWrap.childNodes[0].textContent.length; i++) {
+        let range = document.createRange()
+        range.setStart(contentWrap.childNodes[0], i)
+        range.setEnd(contentWrap.childNodes[0], i)
+
+        console.log(range.getBoundingClientRect())
+        ranges.push(range)
+    }
+
+    function getNearest (x, y) {
+        let min = Infinity
+        let nearest = null
+        for (range of ranges) {
+            let rect = range.getBoundingClientRect()
+            let distance = (rect.x - x) ** 2 + (rect.y - y) ** 2
+            if (distance < min) {
+                nearest = range
+                min = distance
+            }
+        }
+        return nearest
+    }
+</script>
+</body>
+</html>

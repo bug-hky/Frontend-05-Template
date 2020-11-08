@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Base Map</title>
+    <style>
+        body {
+            margin: 0 5px;
+        }
+        .cell {
+            width: 8px;
+            height: 8px;
+            background: gray;
+            display: inline-block;
+            border-bottom: solid 1px white;
+            border-right: solid 1px white;
+        }
+        #map {
+            width: 900px;
+            font-size: 0;
+        }
+        .m-b-5 {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+<button class="m-b-5" onclick="reset()">refresh</button>
+<button class="m-b-5" onclick="save()">save</button>
+<div id="map"></div>
+</body>
+<script>
+    let isReset = false // 是否重置地图
+    let map = Array(10000).fill(0)
+    let container = document.getElementById('map')
+    let mousedown = false
+    let clear = false
+    document.addEventListener('mousedown', e => {
+        mousedown = true
+        clear = (e.which === 3) // 点击滚轮的时候，把clear变量置为true，即执行清除操作
+    })
+    document.addEventListener('mouseup', () => { mousedown = false })
+    document.addEventListener('contextmenu', e => e.preventDefault())
+
+    // 更新地图数据到html
+    function init () {
+        if (isReset) {
+            map = Array(10000).fill(0)
+        } else {
+            useSavedMap()
+        }
+        container.innerHTML = ''
+        for (let y = 0; y < 100; y++) {
+            for (let x = 0; x < 100; x++) {
+                let cell = document.createElement('div')
+                cell.classList.add('cell')
+                if (map[y * 100 + x] === 1)
+                    cell.style.backgroundColor = 'black'
+                cell.addEventListener('mousemove', () => {
+                    if (mousedown) {
+                        if (clear) {
+                            cell.style.backgroundColor = ''
+                            map[y * 100 + x] = 0
+                        } else {
+                            cell.style.backgroundColor = 'black'
+                            map[y * 100 + x] = 1
+                        }
+                    }
+                })
+                container.appendChild(cell)
+            }
+        }
+    }
+
+    // 重置地图
+    function reset () {
+        isReset = true
+        init()
+    }
+
+    // 延时函数
+    function sleep (time) {
+        return new Promise((resolve) => {
+            setTimeout(resolve, time)
+        })
+    }
+
+    // 使用保存过后的地图数据
+    function useSavedMap () {
+        let savedMap = JSON.parse(window.sessionStorage.getItem('map'))
+        if (savedMap) map = savedMap
+    }
+
+    // 保存当前的地图数据
+    function save () {
+        window.sessionStorage.setItem('map', JSON.stringify(map))
+    }
+
+    // 寻找起点到终点的路径
+    async function findPath (map, start, end) {
+        let road = Object.create(map)
+        let queue = [start]
+        async function insert (x, y, pre) {
+            if (x < 0 || x >= 100 || y < 0 || y >= 100) return
+            if (road[y * 100 + x]) return
+            await sleep(1)
+            container.children[y * 100 + x].style.backgroundColor = 'lightblue'
+            road[y * 100 + x] = pre
+            queue.push([x, y])
+        }
+        while (queue.length) {
+            let [x, y] = queue.shift()
+            console.info(x, y)
+            if (x === end[0] && y === end[1]) {
+                let path = []
+                while (x !== start[0] || y !== start[1]) {
+                    console.info('road[y * 100 + x]', road[y * 100 + x], [x, y])
+                    path.push(map[y * 100 + x])
+                    // [x, y] = road[y * 100 + x] 这个解构赋值似乎有点问题，不能直接执行，和版本有关?
+                    let oldIndex = y * 100 + x
+                    x = road[oldIndex][0]
+                    y = road[oldIndex][1]
+                    await sleep(1)
+                    container.children[y * 100 + x].style.backgroundColor = 'red'
+                }
+                return path
+            }
+            // 正向
+            await insert(x - 1, y, [x, y])
+            await insert(x + 1, y, [x, y])
+            await insert(x, y - 1, [x, y])
+            await insert(x, y + 1, [x, y])
+            // 斜向
+            await insert(x - 1, y - 1, [x, y])
+            await insert(x + 1, y - 1, [x, y])
+            await insert(x - 1, y + 1, [x, y])
+            await insert(x + 1, y + 1, [x, y])
+        }
+        return null
+    }
+
+    init()
+</script>
+</html>
