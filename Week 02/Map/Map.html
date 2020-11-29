@@ -32,6 +32,7 @@
 <script>
     let isReset = false
     let map = Array(10000).fill(0)
+    // 初始化或更新视图 - 2020-10-1 - panther
     function init () {
         if (isReset) {
             map = Array(10000).fill(0)
@@ -50,8 +51,10 @@
                     if (mousedown) {
                         if (clear) {
                             cell.style.backgroundColor = ''
+                            // 0 代表有效未判断过的空格子 - 2020-10-1 - panther
                             map[y * 100 + x] = 0
                         } else {
+                            // 1 代表格子是墙，非有效路径 - 2020-10-1 - panther
                             cell.style.backgroundColor = 'black'
                             map[y * 100 + x] = 1
                         }
@@ -71,16 +74,19 @@
     document.addEventListener('mouseup', () => { mousedown = false })
     document.addEventListener('contextmenu', e => e.preventDefault())
 
+    // 重置地图数据 - 2020-10-1 - panther
     function reset () {
         isReset = true
         init()
     }
 
+    // 加载保存过的地图数据 - 2020-10-1 - panther
     function useSavedMap () {
         let savedMap = JSON.parse(window.sessionStorage.getItem('map'))
         if (savedMap) map = savedMap
     }
 
+    // 保存地图数据 - 2020-10-1 - panther
     function save () {
         window.sessionStorage.setItem('map', JSON.stringify(map))
     }
