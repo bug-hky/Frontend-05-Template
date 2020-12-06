@@ -1,4 +1,5 @@
-let net = require('net')
+const net = require('net')
+const parser = require('./parser.js')
 
 // 一.HTTP请求
 // 设计一个HTTP请求的类
@@ -256,6 +257,9 @@ async function rqs () {
 
     let response = await request.send()
     console.info(response)
+
+    let dom = parser.parseHTML(response.body)
+    console.info(dom)
 }
 
 rqs()

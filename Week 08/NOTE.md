@@ -39,6 +39,6 @@
 4. ResponseParser
     - Response必须分段构造，所以我们要用一个ResponseParser来"装配"
     - ResponseParser分段主力ResponseText, 我们用状态机来分析文本的结构
-5.BodyParser
+5. BodyParser
     - Response的body可能根据Content-Type有不同的结构，因此我们会采用子Parser的结构来解决问题
     - 以TrunkedBodyParser为例，使用状态及来处理body的格式
