@@ -1,5 +1,7 @@
+const images = require('images')
 const net = require('net')
 const parser = require('./parser.js')
+const render = require('./render.js')
 
 // 一.HTTP请求
 // 设计一个HTTP请求的类
@@ -260,6 +262,17 @@ async function rqs () {
 
     let dom = parser.parseHTML(response.body)
     console.info(dom)
+
+    let viewport = images(800, 600)
+    
+    // 绘制单个元素
+    //                   html        body        ...         ...
+    // render(viewport, dom.children[0].children[3].children[1].children[3])
+
+    // 绘制dom树
+    render(viewport, dom)
+
+    viewport.save('viewport.jpg')
 }
 
 rqs()
