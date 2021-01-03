@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Class</title>
+</head>
+<body>
+    <script>
+        let names = Object.getOwnPropertyNames(window)
+
+        function filterOut (names, props) {
+            let set = new Set()
+            props.forEach(o => set.add(o))
+            return names.filter(e => !set.has(e))
+        }
+
+        // ECMA 262
+        {
+            let js = new Set()
+            let keys = [
+                'Object', 'Fucntion', 'Array', 'Number', 'parseFloat', 'parseInt',
+                'Infinity', 'NaN', 'undefined', 'Boolean', 'String', 'Symbol', 'Date',
+                'Promise', 'RegExp', 'Error', 'EvalError', 'RangeError', 'ReferenceError',
+                'SyntaxError', 'TypeError', 'URIError', 'globalThis', 'JSON', 'Math', 'console',
+                'ArrayBuffer', 'Unit8Array', 'Int8Array', 'Unit16Array', 'Int16Array'
+            ]
+            keys.forEach(o => js.add(o))
+            names = names.filter(name => js.has(name))
+        }
+
+        // sub class of NODE
+        names = names.filter((e) => {
+            try {
+                return !(window[e].prototype instanceof Node)
+            } catch (err) {
+                return true
+            }
+        }).filter(e => e != 'Node')
+
+        // events
+        names = names.filter(e => !e.match(/^on/))
+
+        // webkit private
+        names = names.filter(e => !e.match(/^webkit/))
+
+        // http://html.spec.whatwg.org/#window
+        {
+            let windowprops = new Set()
+            let keys = [
+                'window', 'self', 'document', 'name', 'location', 'customElements', 'history'
+            ]
+            keys.forEach(o => windowprops.add(o))
+            names = names.filter(e => !windowprops.has(e))
+        }
+
+        // http://html.spec.whatwg.org
+        {
+            let interfaces = new Set()
+            let keys = []
+            keys.forEach(o => interfaces.add(o))
+            names = names.filter(e => !interfaces.has(e))
+        }
+
+        // http://ecma-international.org
+        names = names.filter(e => e !== 'Intl')
+
+        // http://www.w3.org/TR/webaudio
+        names = filterOut(names, [
+            'WebGLVertexArrayObject', 'WebGLUniformLocation', 'WebGLTransformFeedback', 'WebGLTexture',
+            'WebGLSync', 'WebGLSampler', 'WebGLRenderingContext', 'WebGLShader', 'WebGLShaderPrecisionFormat',
+            'WebGLRenderbuffer', 'WebGLQuery', 'WebGLProgram', 'WebGLFramebuffer', 'WebGLContextEvent', 'WebGLBuffer',
+            'WebGLActiveInfo', 'WebGL2RenderingContext',
+        ])
+
+        // xhr
+        names = filterOut(names, [
+            'XMLHttpRequestUpload', 'XMLHttpRequestEventTarget', 'XMLHttpRequest', 'FormDataEvent',
+            'FormData', 'ProcessEvent'
+        ])
+
+        // notifications
+        names = filterOut(names, [
+            'Notification'
+        ])
+
+        // url
+        names = filterOut(names, [
+            'URLSearchParams', 'URL'
+        ])
+
+        // fetch
+        names = filterOut(names, [
+            'Headers', 'Request', 'Body'
+        ])
+
+        // storage
+        names = filterOut(names, [
+            'StorageManager', 'Storage', 'sessionStorage', 'localStorage'
+        ])
+    </script>
+</body>
+</html>

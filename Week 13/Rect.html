@@ -1,0 +1,17 @@
+<style>
+    .x::before {
+        content: 'other other other other other';
+        background-color: pink;
+    }
+</style>
+<div style="width:150px;height:400px;overflow:scroll;">
+text <span class="x" style="background-color: lightblue;">text text text text text text text</span>
+</div>
+<script>
+    var x = document.getElementsByClassName('x')[0]
+    // x.getClientRects()
+    // x.getBoundingClientRect()
+
+    // 1.伪元素本身也会参与到盒的生成过程中
+    // 2.伪元素在页面上是无法被选中以及相关copy操作的
+</script>
