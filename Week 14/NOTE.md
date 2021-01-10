@@ -778,7 +778,7 @@ this.root.addEventListener('mousedown', event => {
 })
 ```
 
-- 实现前后拖拽的无缝对接
+- 实现前后方向的拖拽无缝对接
 
 ```
 let position = 0
@@ -787,7 +787,7 @@ this.root.addEventListener('mousedown', event => {
     let children = this.root.children
     // clientX & clientY 表示相对于浏览器的可渲染区域的坐标，他不受任何因素的影响
     let startX = event.clientX
-    
+
     let move = event => {
         console.info('mousemove')
         let x = event.clientX - startX
@@ -806,7 +806,7 @@ this.root.addEventListener('mousedown', event => {
         console.info('mouseup')
         let x = event.clientX - startX
         position = position - Math.round(x / 500)
-        for (let offset of [0, Math.sign(- x + 250 * Math.sign(x))]) {
+        for (let offset of [0, - Math.sign(Math.round(x / 500) - x + 250 * Math.sign(x))]) {
             let pos = position + offset
             pos = (pos + children.length) % children.length
             if (offset === 0) position = pos

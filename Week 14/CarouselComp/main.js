@@ -63,7 +63,7 @@ class Carousel extends Component {
                     console.info('mouseup')
                     let x = event.clientX - startX
                     position = position - Math.round(x / 500)
-                    for (let offset of [0, Math.sign(- x + 250 * Math.sign(x))]) {
+                    for (let offset of [0, - Math.sign(Math.round(x / 500) - x + 250 * Math.sign(x))]) {
                         let pos = position + offset
                         pos = (pos + children.length) % children.length
                         if (offset === 0) position = pos
