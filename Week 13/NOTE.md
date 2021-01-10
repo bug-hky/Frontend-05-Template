@@ -19,6 +19,12 @@
 ## 3.DOM API
 
 - 把 element 的 childNodes 变成一个普通的数组之后，它就没有 living collection 特性了，也不会再随着 DOM 的 insert remove 等操作变化
+- 在元素前后添加元素
+
+```
+box.parentNode.insertBefore(p, box); // 在box之前添加元素
+box.parentNode.insertBefore(p, box.nextSibling); // 在box之后添加元素
+```
 
 ## 4.Rect
 

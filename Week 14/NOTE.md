@@ -481,3 +481,343 @@ a.amountTo(document.body) // 反向挂载写法
 ```
 
 - 这个 Div 类只是为了匹配例子中我们自定义的组件，实际上我们自定义组件会有很多奇怪的名字，原理上只是对 Div 类做了一层抽象罢了
+
+## 2.手撸一个轮播组件
+
+### 1) 抽象出 framework.js
+
+```
+
+export function createElement (type, attributes, ...children) {
+    ...
+}
+
+class Component {
+    constructor (type) {
+        this.root = this.render()
+    }
+
+    setAttribute (name, value) {
+        this.root[name] = value
+    }
+
+    appendChild (child) {
+        child.mountTo(this.root)
+    }
+
+    mountTo (parent) {
+        parent.appendChild(this.root)
+    }
+}
+
+class ElementWrap extends Component {
+    constructor (type) {
+        this.root = documen.createElement(type)
+    }
+}
+
+class TextWrap extends Component {
+    constructor (content) {
+        this.root = document.createTextNode(content)
+    }
+}
+
+```
+
+### 2) 在 main.js 中使用 framework
+
+1. 在 main.js 中使用 framework
+
+```
+import { Component, createElement } from './framework'
+
+class Carousel extends Component {
+    constructor () {
+        // super() 把render函数触发的时机往后移（到mountTo里面调用）
+        this.attributes = Object.create(null)
+    }
+    // 重写setAttribute函数
+    setAttribute (name, value) {
+        this.attributes[name] = value
+    }
+
+    render () {
+        console.info(this.attributes)
+        return document.createElement('div')
+    }
+
+    mountTo (parent) {
+
+        parent.appendChild(this.render())
+    }
+}
+
+let d = [
+    'https://static001.geekbang.org/resource/image/bb/21/bb38fb7c1073eaee1755f81131f11d21.jpg',
+    'https://static001.geekbang.org/resource/image/1b/21/1b809d9a2bdf3ecc481322d7c9223c21.jpg',
+    'https://static001.geekbang.org/resource/image/b6/4f/b6d65b2f12646a9fd6b8cb2b020d754f.jpg',
+    'https://static001.geekbang.org/resource/image/73/e4/730ea9c393def7975deceb48b3eb6fe4.jpg'
+]
+
+let a = <Carousel src={d} />
+a.mountTo(document.body)
+```
+
+2. 添加 webpack 的 dev-tool:webpack-dev-server 动态更新
+
+```
+rollbackFailedOptional verb npm-session解决方式:
+npm config set registry http://registry.npm.taobao.org
+
+```
+
+3. 渲染图片
+
+- 把 Component 里的 super 注释
+
+```
+// framework.js
+export class Component {
+    constructor (type) {
+        // this.root = this.render()
+    }
+
+    setAttribute (name, value) {
+        this.root[name] = value
+    }
+
+    appendChild (child) {
+        child.mountTo(this.root)
+    }
+
+    mountTo (parent) {
+        parent.appendChild(this.root)
+    }
+}
+```
+
+- 把 Carousel 里的 super 调用, super 需要调用, 不调用会报错
+
+```
+...
+class Carousel extends Component {
+    constructor () {
+        super()
+        this.attributes = Object.create(null)
+    }
+
+    setAttribute (name, value) {
+        this.attributes[name] = value
+    }
+
+    render () {
+        // 打印添加的属性
+        console.info(this.attributes)
+        return document.createElement('div')
+    }
+
+    mountTo (parent) {
+        parent.appendChild(this.render())
+    }
+}
+...
+```
+
+- 把图片渲染出来
+
+```
+class Carousel extends Component {
+    constructor () {
+        super()
+        // super() 把render函数触发的时机往后移（到mountTo里面调用）
+        this.attributes = Object.create(null)
+    }
+    // 重写setAttribute函数
+    setAttribute (name, value) {
+        this.attributes[name] = value
+    }
+
+    render () {
+        this.root = document.createElement('div')
+        for (let path of this.attributes.src) {
+            let child = document.createElement('img')
+            child.src = path
+            this.root.appendChild(child)
+        }
+        return this.root
+    }
+
+    mountTo (parent) {
+        parent.appendChild(this.render())
+    }
+}
+```
+
+- 实现图片轮播效果
+
+```
+/*
+* 使子元素横排:
+*   子元素 display: inline-block;
+*   父元素 white-space: nowrap;
+* transition:
+*   一般只用ease(较为符合人类的感受)
+*   ease-in 退出动画
+*   ease-out 进入动画
+*   linear 大部分情况不会用
+*/
+...
+    render () {
+        // console.info(this.attributes)
+        // return document.createElement('div')
+
+        this.root = document.createElement('div')
+        this.root.classList = 'carousel'
+        for (let path of this.attributes.src) {
+            // let child = document.createElement('img')
+            // child.src = path
+            let child = document.createElement('div')
+            child.style.backgroundImage = `url(${path})`
+            this.root.appendChild(child)
+            let current = 0
+            setInterval(() => {
+                let children = this.root.children
+                current++
+                current = current % children.length
+                // map遍历是针对数组, for是只要是可迭代的数据结构即可
+                for (let child of children) {
+                    child.style.transform = `translateX(-${current * 100}%)`
+                }
+            }, 3000)
+        }
+        return this.root
+    }
+...
+```
+
+- 解决轮播未无限循环的问题
+
+```
+render () {
+        this.root = document.createElement('div')
+        this.root.classList = 'carousel'
+        for (let path of this.attributes.src) {
+            let child = document.createElement('div')
+            child.style.backgroundImage = `url(${path})`
+            this.root.appendChild(child)
+
+            let currentIndex = 0
+            setInterval(() => {
+                let children = this.root.children
+
+                let nextIndex = (currentIndex + 1) % children.length
+
+                let current = children[currentIndex]
+                let next = children[nextIndex]
+
+                // 将下一个图片瞬间挪到100%的位置
+                next.style.transition = 'none'
+                next.style.transform = `translateX(${100 - nextIndex * 100}%)`
+
+                // 16ms为浏览器一帧的时间
+                setTimeout(() => {
+
+                    // 将下一张图片的transition置空,这样会继续使用css中的transition
+                    next.style.transition = ''
+
+                    // 将当前图片transition挪到-100%的位置
+                    current.style.transform = `translateX(${-100 - currentIndex * 100}%)`
+
+                    // 将下一张图片transition挪到0%的位置
+                    next.style.transform = `translateX(${- nextIndex * 100}%)`
+
+                    // 将下一个nextIndex赋值给currentIndex <=> currentIndex++
+                    currentIndex = nextIndex
+
+                }, 16)
+
+            }, 3000)
+        }
+        return this.root
+    }
+```
+
+- 实现基础拖拽滑动功能
+
+```
+let position = 0
+this.root.addEventListener('mousedown', event => {
+    console.info('mousedown')
+    let children = this.root.children
+    // clientX & clientY 表示相对于浏览器的可渲染区域的坐标，他不受任何因素的影响
+    let startX = event.clientX
+
+    let move = event => {
+        console.info('mousemove')
+        let x = event.clientX - startX
+        for (child of children) {
+            child.style.transition = 'none'
+            child.style.transform = `translateX(${- position * child.getBoundingClientRect().width + x}px)`
+        }
+    }
+
+    let up = event => {
+        console.info('mouseup')
+        let x = event.clientX - startX
+        position = position - Math.round(x / child.getBoundingClientRect().width)
+        for (child of children) {
+            child.style.transition = ''
+            child.style.transform = `translateX(${- position * child.getBoundingClientRect().width}px)`
+        }
+        document.removeEventListener('mouseup', up)
+        document.removeEventListener('mousemove', move)
+    }
+
+    document.addEventListener('mousemove', move)
+    document.addEventListener('mouseup', up)
+})
+```
+
+- 实现前后拖拽的无缝对接
+
+```
+let position = 0
+this.root.addEventListener('mousedown', event => {
+    console.info('mousedown')
+    let children = this.root.children
+    // clientX & clientY 表示相对于浏览器的可渲染区域的坐标，他不受任何因素的影响
+    let startX = event.clientX
+    
+    let move = event => {
+        console.info('mousemove')
+        let x = event.clientX - startX
+
+        let current = position - ((x - x % 500) / 500)
+
+        for (let offset of [-1, 0, 1]) {
+            let pos = current + offset
+            pos = (pos + children.length) % children.length
+            children[pos].style.transition = 'none'
+            children[pos].style.transform = `translateX(${- pos * 500 + offset * 500 + x % 500}px)`
+        }
+    }
+
+    let up = event => {
+        console.info('mouseup')
+        let x = event.clientX - startX
+        position = position - Math.round(x / 500)
+        for (let offset of [0, Math.sign(- x + 250 * Math.sign(x))]) {
+            let pos = position + offset
+            pos = (pos + children.length) % children.length
+            if (offset === 0) position = pos
+            children[pos].style.transition = ''
+            children[pos].style.transform = `translateX(${- pos * 500 + offset * 500}px)`
+        }
+        document.removeEventListener('mouseup', up)
+        document.removeEventListener('mousemove', move)
+    }
+
+    document.addEventListener('mousemove', move)
+    document.addEventListener('mouseup', up)
+})
+```
