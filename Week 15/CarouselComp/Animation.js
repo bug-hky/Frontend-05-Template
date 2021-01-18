@@ -12,11 +12,14 @@ const PAUSE_TIME = Symbol('pause-time')
 export class Timeline {
     constructor() {
         // 添加animation队列
+        this.state = 'Inited'
         this[ANIMATIONS] = new Set()
         this[START_TIME] = new Map()
     }
     // 开始
     start(){
+        if (this.state !== 'Inited') return false
+        this.state = 'Started'
         let startTime = Date.now()
         // 初始化的暂停时间为0
         this[PAUSE_TIME] = 0
@@ -26,32 +29,46 @@ export class Timeline {
             
             for(let animation of this[ANIMATIONS]) {
                 let t
-                if (this[START_TIME].get(animation) < startTime) {
-                    t = now - startTime - this[PAUSE_TIME]
-                } else {
-                    t = now - this[START_TIME].get(animation) - this[PAUSE_TIME]
-                }
+                if (this[START_TIME].get(animation) < startTime)
+                    t = now - startTime - this[PAUSE_TIME] - animation.delay
+                else
+                    t = now - this[START_TIME].get(animation) - this[PAUSE_TIME] - animation.delay
+
                 if (animation.duration < t) {
                     this[ANIMATIONS].delete(animation)
                     t = animation.duration
                 }
-                animation.receiveTime(t)
+                // 当t < 0的时候说明延时dealy还没有结束，动画还没有开始
+                if (t > 0)  animation.receiveTime(t)
             }
             this[TICK_HANDLER] = requestAnimationFrame(this[TICK])
         }
         this[TICK]()
     }
     // 播放速率
+    // 暂停
     pause () {
+        if (this.state !== 'Started') return false
+        this.state = 'Paused'
         this[PAUSE_START] = Date.now()
         cancelAnimationFrame(this[TICK_HANDLER])
-    } // 暂停
+    }
+    // 恢复
     resume () {
+        if (this.state !== 'Paused') return false
+        this.state = 'Started'
         this[PAUSE_TIME] += Date.now() - this[PAUSE_START]
         this[TICK]()
-    } // 恢复
-    reset(){} // 重启
-
+    }
+    // 重置
+    reset () {
+        this.pause()
+        this[ANIMATIONS] = new Set()
+        this[START_TIME] = new Map()
+        this[TICK_HANDLER] = null
+        this[PAUSE_START] = 0
+        this[PAUSE_TIME] = 0
+    }
     // 添加动画
     add (animation, startTime) {
         if (arguments.length < 2) {
@@ -71,6 +88,10 @@ export class Animation {
      * timingFunction差值函数
      * */ 
     constructor(object, property, startValue, endValue, duration, delay, timingFunction, template) {
+        // 加上timingFunction和template的默认值处理
+        timingFunction = timingFunction || (v => v)
+        template = template || (v => v)
+
         this.object = object
         this.property = property 
         this.startValue = startValue
@@ -83,6 +104,8 @@ export class Animation {
     receiveTime (time) {
         console.info('time =>', this.object[this.property])
         let range = (this.endValue - this.startValue)
-        this.object[this.property] = this.template(this.startValue + range * time / this.duration)
+        // 使用timingFunction处理动画的进度
+        let progress = this.timingFunction(time / this.duration)
+        this.object[this.property] = this.template(this.startValue + range * progress)
     }
 }
