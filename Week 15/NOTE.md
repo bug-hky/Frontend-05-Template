@@ -1125,3 +1125,444 @@ export class Animation {
     ...
 }
 ```
+
+### 手势基础
+
+#### 手势的基本模型抽象
+
+![avatar](./Gesture.png)
+
+#### 浏览器 mouse && touch 事件模型
+
+> mouse && touch 事件模型抽象
+
+- touchcancel 的触发机制
+
+```js
+let element = document.documentElement;
+
+/**
+ * mouse实践抽象模型
+ */
+
+element.addEventListener("mousedown", (e) => {
+  mousemove = (e) => {
+    console.info(e.clientX, e.clientY);
+  };
+  mouseup = (e) => {
+    element.removeEventListener("mousemove", mousemove);
+    element.removeEventListener("mouseup", mouseup);
+  };
+  element.addEventListener("mousemove", mousemove);
+  element.addEventListener("mouseup", mouseup);
+});
+
+/**
+ * touch事件抽象
+ */
+
+element.addEventListener("touchstart", (e) => {
+  console.info(e.changedTouches);
+  for (let touch of e.changedTouches) {
+    console.info("start", touch.clientX, touch.clientY);
+  }
+});
+
+element.addEventListener("touchmove", (e) => {
+  for (let touch of e.changedTouches) {
+    console.info("move", touch.clientX, touch.clientY);
+  }
+});
+
+element.addEventListener("touchend", (e) => {
+  for (let touch of e.changedTouches) {
+    console.info("end", touch.clientX, touch.clientY);
+  }
+});
+
+element.addEventListener("touchcancel", (e) => {
+  for (let touch of e.changedTouches) {
+    console.info("cancel", touch.clientX, touch.clientY);
+  }
+});
+
+/**
+ * 类似于系统中的全局事件会把正在进行的touch事件cancel掉，
+ * 如下setTimeout代码执行的时候如果正在touchmove会触发
+ * touchcancel事件监听
+ */
+setTimeout(() => window.alert("###"), 3000);
+```
+
+- 初步抽象
+
+```js
+...
+
+element.addEventListener('mousedown', e => {
+    mousemove = e => {
+        start(e)
+    }
+    mouseup = e => {
+        end(e)
+        ...
+    }
+    ...
+})
+
+element.addEventListener('touchstart', e => {
+    for (let touch of e.changedTouches) {
+        start(touch)
+    }
+})
+
+element.addEventListener('touchmove', e => {
+    for (let touch of e.changedTouches) {
+        move(touch)
+    }
+})
+
+element.addEventListener('touchend', e => {
+    for (let touch of e.changedTouches) {
+        end(touch)
+    }
+})
+
+element.addEventListener('touchcancel', e => {
+    for (let touch of e.changedTouches) {
+        cancel(touch)
+    }
+})
+
+...
+
+let start = event => {
+    console.info('start', event.clientX, event.clientY)
+}
+
+let move = event => {
+    console.info('move', event.clientX, event.clientY)
+}
+
+let end = event => {
+    console.info('end', event.clientX, event.clientY)
+}
+
+let cancel = event => {
+    console.info('cancel', event.clientX, event.clientY)
+}
+```
+
+- 完善 touch 事件流
+
+```js
+...
+let handler
+let startX, startY
+let isPan = false
+let isTap = true
+let isPress = false
+let start = point => {
+    // console.info('start', point.clientX, point.clientY)
+    startX = point.clientX, startY = point.clientY
+    isPan = false
+    isTap = true
+    isPress = false
+    handler = setTimeout(() => {
+        isPan = false
+        isTap = false
+        isPress = true
+        // 避免多次clearTimeout
+        handler = null
+        console.info('press')
+    }, 500)
+}
+
+let move = point => {
+    // 判断是否移动10px来判断是否触发了pan事件
+    dx = point.clientX - startX, dy = point.clientY - startY
+    if (!isPan && (dx ** 2 + dy ** 2) > 100) {
+        isPan = true
+        isTap = false
+        isPress = false
+        clearTimeout(handler)
+        console.info('startPan')
+    }
+
+    if (isPan) {
+        console.info('Pan', dx, dy)
+    }
+    // console.info('move', point.clientX, point.clientY)
+}
+
+let end = point => {
+    if (isTap) {
+        console.info('tap')
+        clearTimeout(handler)
+    }
+    if (isPan) {
+        console.info('panend')
+    }
+    if (isPress) {
+        console.info('pressend')
+    }
+    // console.info('end', point.clientX, point.clientY)
+}
+
+let cancel = point => {
+    clearTimeout(handler)
+    // console.info('cancel', point.clientX, point.clientY)
+}
+```
+
+- 全局变量的处理
+
+由于 touch 事件在实际的触屏操作可能会触发多个实例, 鼠标事件也会有左右键的区分，所以可以通过实例的唯一标识 identifer 设置 context 作为参数传入
+
+```js
+...
+/**
+ * touch事件抽象
+*/
+let contexts = new Map()
+
+element.addEventListener('touchstart', e => {
+    console.info(e.changedTouches)
+    for (let touch of e.changedTouches) {
+        let context = Object.create(null)
+        contexts.set(touch.identifier, context)
+        start(touch, context)
+    }
+})
+
+element.addEventListener('touchmove', e => {
+    for (let touch of e.changedTouches) {
+        let context = contexts.get(touch.identifier)
+        move(touch, context)
+    }
+})
+
+element.addEventListener('touchend', e => {
+    for (let touch of e.changedTouches) {
+        let context = contexts.get(touch.identifier)
+        end(touch, context)
+        contexts.delete(touch.identifier)
+    }
+})
+
+element.addEventListener('touchcancel', e => {
+    for (let touch of e.changedTouches) {
+        let context = contexts.get(touch.identifier)
+        cancel(touch, context)
+        contexts.delete(touch.identifier)
+    }
+})
+
+/**
+ * 类似于系统中的全局事件会把正在进行的touch事件cancel掉，
+ * 如下setTimeout代码执行的时候如果正在touchmove会触发
+ * touchcancel事件监听
+*/
+// setTimeout(() => window.alert('###'), 3000)
+let start = (point, context) => {
+    // console.info('start', point.clientX, point.clientY)
+    context.startX = point.clientX, context.startY = point.clientY
+    context.isPan = false
+    context.isTap = true
+    context.isPress = false
+    context.handler = setTimeout(() => {
+        context.isPan = false
+        context.isTap = false
+        context.isPress = true
+        // 避免多次clearTimeout
+        context.handler = null
+        console.info('press')
+    }, 500)
+}
+
+let move = (point, context) => {
+    // 判断是否移动10px
+    dx = point.clientX - context.startX, dy = point.clientY - context.startY
+    if (!context.isPan && (dx ** 2 + dy ** 2) > 100) {
+        context.isPan = true
+        context.isTap = false
+        context.isPress = false
+        clearTimeout(context.handler)
+        console.info('startPan')
+    }
+
+    if (context.isPan) {
+        console.info('Pan', dx, dy)
+    }
+    // console.info('move', point.clientX, point.clientY)
+}
+
+let end = (point, context) => {
+    if (context.isTap) {
+        console.info('tap')
+        clearTimeout(context.handler)
+    }
+    if (context.isPan) {
+        console.info('panend')
+    }
+    if (context.isPress) {
+        console.info('pressend')
+    }
+    // console.info('end', point.clientX, point.clientY)
+}
+
+let cancel = (point, context) => {
+    clearTimeout(context.handler)
+    // console.info('cancel', point.clientX, point.clientY)
+}
+```
+
+- 鼠标事件的处理
+
+由于没有加上鼠标事件的 context，在 start，move 等函数中会报错
+
+```js
+let element = document.documentElement;
+
+let isListeningMouse = false;
+/**
+ * mouse实践抽象模型
+ */
+element.addEventListener("mousedown", (e) => {
+  let context = Object.create(null);
+  contexts.set(`mouse${1 << e.button}`, context);
+  start(e, context);
+  mousemove = (e) => {
+    let button = 1;
+    while (button <= e.buttons) {
+      // console.info('button', button)
+      // console.info('buttons', e.buttons)
+      if (button && e.buttons) {
+        let key;
+        /**
+         * event.button和event.buttons的关系: 1 << event.button === event.buttons
+         * (buttons的滚轮和右键需要反转)
+         */
+        if (button === 2) key = 4;
+        else if (button === 4) key = 2;
+        else key = button;
+        let context = contexts.get(`mouse${key}`);
+        // console.info(':', `mouse${key}`)
+        // console.info('::', contexts)
+        // console.info(':::', context)
+        if (context) move(e, context);
+      }
+      button = button << 1;
+    }
+  };
+  mouseup = (e) => {
+    // console.info('over.e', e)
+    let context = contexts.get(`mouse${1 << e.button}`);
+    if (context) end(e, context);
+    contexts.delete(`mouse${1 << e.button}`);
+    if (e.buttons === 0) {
+      element.removeEventListener("mousemove", mousemove);
+      element.removeEventListener("mouseup", mouseup);
+      isListeningMouse = false;
+    }
+  };
+  if (!isListeningMouse) {
+    element.addEventListener("mousemove", mousemove);
+    element.addEventListener("mouseup", mouseup);
+    isListeningMouse = true;
+  }
+});
+
+/**
+ * touch事件抽象
+ */
+let contexts = new Map();
+
+element.addEventListener("touchstart", (e) => {
+  console.info(e.changedTouches);
+  for (let touch of e.changedTouches) {
+    let context = Object.create(null);
+    contexts.set(touch.identifier, context);
+    start(touch, context);
+  }
+});
+
+element.addEventListener("touchmove", (e) => {
+  for (let touch of e.changedTouches) {
+    let context = contexts.get(touch.identifier);
+    move(touch, context);
+  }
+});
+
+element.addEventListener("touchend", (e) => {
+  for (let touch of e.changedTouches) {
+    let context = contexts.get(touch.identifier);
+    end(touch, context);
+    contexts.delete(touch.identifier);
+  }
+});
+
+element.addEventListener("touchcancel", (e) => {
+  for (let touch of e.changedTouches) {
+    let context = contexts.get(touch.identifier);
+    cancel(touch, context);
+    contexts.delete(touch.identifier);
+  }
+});
+
+/**
+ * 类似于系统中的全局事件会把正在进行的touch事件cancel掉，
+ * 如下setTimeout代码执行的时候如果正在touchmove会触发
+ * touchcancel事件监听
+ */
+// setTimeout(() => window.alert('###'), 3000)
+let start = (point, context) => {
+  (context.startX = point.clientX), (context.startY = point.clientY);
+  context.isPan = false;
+  context.isTap = true;
+  context.isPress = false;
+  context.handler = setTimeout(() => {
+    context.isPan = false;
+    context.isTap = false;
+    context.isPress = true;
+    // 避免多次clearTimeout
+    context.handler = null;
+    console.info("press");
+  }, 500);
+};
+
+let move = (point, context) => {
+  // 判断是否移动10px
+  (dx = point.clientX - context.startX), (dy = point.clientY - context.startY);
+  if (!context.isPan && dx ** 2 + dy ** 2 > 100) {
+    context.isPan = true;
+    context.isTap = false;
+    context.isPress = false;
+    clearTimeout(context.handler);
+    console.info("startPan");
+  }
+
+  if (context.isPan) {
+    console.info("Pan", dx, dy);
+  }
+};
+
+let end = (point, context) => {
+  if (context.isTap) {
+    console.info("tap");
+    clearTimeout(context.handler);
+  }
+  if (context.isPan) {
+    console.info("panend");
+  }
+  if (context.isPress) {
+    console.info("pressend");
+  }
+};
+
+let cancel = (point, context) => {
+  clearTimeout(context.handler);
+};
+```
+
+- 事件派发- eventDispatch
