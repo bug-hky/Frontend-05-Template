@@ -41,14 +41,14 @@ element.addEventListener('mousedown', e => {
         if (context) end(e, context)
         contexts.delete(`mouse${(1 << e.button)}`)
         if (e.buttons === 0) {
-            element.removeEventListener('mousemove', mousemove)
-            element.removeEventListener('mouseup', mouseup)
+            document.removeEventListener('mousemove', mousemove)
+            document.removeEventListener('mouseup', mouseup)
             isListeningMouse = false
         }
     }
     if (!isListeningMouse) {
-        element.addEventListener('mousemove', mousemove)
-        element.addEventListener('mouseup', mouseup)
+        document.addEventListener('mousemove', mousemove)
+        document.addEventListener('mouseup', mouseup)
         isListeningMouse = true
     }
 })
@@ -100,6 +100,11 @@ element.addEventListener('touchcancel', e => {
 // setTimeout(() => window.alert('###'), 3000)
 let start = (point, context) => {
     context.startX = point.clientX, context.startY = point.clientY
+    context.points = [{
+        t: Date.now(),
+        x: point.clientX,
+        y: point.clientY
+    }]
     context.isPan = false
     context.isTap = true
     context.isPress = false
@@ -127,11 +132,19 @@ let move = (point, context) => {
     if (context.isPan) {
         console.info('Pan', dx, dy)
     }
+
+    context.points = context.points.filter(point => Date.now() - point.t < 500)
+    context.points.push({
+        t: Date.now(),
+        x: point.clientX,
+        y: point.clientY
+    })
 }
 
 let end = (point, context) => {
     if (context.isTap) {
-        console.info('tap')
+        // console.info('tap')
+        dispatch('singletap', {})
         clearTimeout(context.handler)
     }
     if (context.isPan) {
@@ -140,8 +153,37 @@ let end = (point, context) => {
     if (context.isPress) {
         console.info('pressend')
     }
+
+    context.points = context.points.filter(point => Date.now() - point.t < 500)
+    let velocity, distance
+    if (!context.points.length) {
+        velocity = 0
+    } else {
+        distance = Math.sqrt(
+            (point.clientX - context.points[0].x) ** 2 +
+            (point.clientY - context.points[0].y) ** 2
+        )
+        velocity = distance / (Date.now() - context.points[0].t)
+    }
+    // console.info('velocity=>', context.points, distance, velocity)
+    if (velocity > 1.5) {
+        context.isFlick = true
+        dispatch('flick', {})
+    } else {
+        context.isFlick = false
+    }
 }
 
 let cancel = (point, context) => {
     clearTimeout(context.handler)
+}
+
+// 事件派发
+
+function dispatch (type, properties) {
+    let event = new Event(type)
+    for (let name in properties) {
+        event[name] = properties[name]
+    }
+    element.dispatchEvent(event)
 }

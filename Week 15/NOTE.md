@@ -1565,4 +1565,360 @@ let cancel = (point, context) => {
 };
 ```
 
-- 事件派发- eventDispatch
+- 事件派发- EventDispatch
+
+```js
+
+let end = (point, context) => {
+    if (context.isTap) {
+        // console.info('tap')
+        dispatch('singletap', {})
+        clearTimeout(context.handler)
+    }
+    if (context.isPan) {
+        console.info('panend')
+    }
+    if (context.isPress) {
+        console.info('pressend')
+    }
+}
+
+...
+
+// 事件派发逻辑函数
+
+function dispatch (type, properties) {
+    let event = new Event(type)
+    for (let name in properties) {
+        event[name] = properties[name]
+    }
+    element.dispatchEvent(event)
+}
+```
+
+```html
+<body></body>
+<script>
+  ...
+
+  document.documentElement.addEventListener('singletap', e => {
+    console.info(e, 'tap trigger')
+  })
+</script>
+```
+
+- flick 事件实现
+
+```js
+
+...
+
+let start = (point, context) => {
+    ...
+    // points是move保存一系列的点的数组，此处是初始化
+    context.points = [{
+        t: Date.now(),
+        x: point.clientX,
+        y: point.clientY
+    }]
+    ...
+}
+
+let move = (point, context) => {
+    ...
+    // 由于move是连续触发的事件，需要限制一下时间段半秒以内的不写入数组
+    context.points = context.points.filter(point => Date.now() - point.t < 500)
+    context.points.push({
+        t: Date.now(),
+        x: point.clientX,
+        y: point.clientY
+    })
+}
+
+let end = (point, context) => {
+    ...
+    context.points = context.points.filter(point => Date.now() - point.t < 500)
+    // 抬起鼠标的时候先算出起始距离，再根据时间差计算出鼠标抬起时的速度
+    let velocity, distance
+    if (!context.points.length) {
+        velocity = 0
+    } else {
+        distance = Math.sqrt(
+            (point.clientX - context.points[0].x) ** 2 +
+            (point.clientY - context.points[0].y) ** 2
+        )
+        velocity = distance / (Date.now() - context.points[0].t)
+    }
+    // 判断速度超过一个基准值的时候，派发flick事件， 并给context添加flick标识
+    if (velocity > 1.5) {
+        context.isFlick = true
+        dispatch('flick', {})
+    } else {
+        context.isFlick = false
+    }
+}
+
+let cancel = (point, context) => {
+    ...
+}
+
+// 事件派发
+function dispatch (type, properties) {
+    ...
+}
+```
+
+- 封装事件模型
+
+> 抽象一个过程 listen(监听) => recognize(识别) => dispatch(事件分发)
+
+```js
+export class Listener {
+  constructor(element, recognize) {
+    this.element = element;
+
+    let isListeningMouse = false;
+
+    /**
+     * mouse实践抽象模型
+     */
+
+    element.addEventListener("mousedown", (e) => {
+      let context = Object.create(null);
+      contexts.set(`mouse${1 << e.button}`, context);
+      recognize.start(e, context);
+      let mousemove = (e) => {
+        let button = 1;
+        while (button <= e.buttons) {
+          // console.info('button', button)
+          // console.info('buttons', e.buttons)
+          if (button && e.buttons) {
+            let key;
+            /**
+             * event.button和event.buttons的关系: 1 << event.button === event.buttons
+             * (buttons的滚轮和右键需要反转)
+             */
+            if (button === 2) key = 4;
+            else if (button === 4) key = 2;
+            else key = button;
+            let context = contexts.get(`mouse${key}`);
+            // console.info(':', `mouse${key}`)
+            // console.info('::', contexts)
+            // console.info(':::', context)
+            if (context) recognize.move(e, context);
+          }
+          button = button << 1;
+        }
+      };
+      let mouseup = (e) => {
+        // console.info('over.e', e)
+        let context = contexts.get(`mouse${1 << e.button}`);
+        if (context) recognize.end(e, context);
+        contexts.delete(`mouse${1 << e.button}`);
+        if (e.buttons === 0) {
+          document.removeEventListener("mousemove", mousemove);
+          document.removeEventListener("mouseup", mouseup);
+          isListeningMouse = false;
+        }
+      };
+      if (!isListeningMouse) {
+        document.addEventListener("mousemove", mousemove);
+        document.addEventListener("mouseup", mouseup);
+        isListeningMouse = true;
+      }
+    });
+
+    /**
+     * touch事件抽象
+     */
+
+    let contexts = new Map();
+
+    element.addEventListener("touchstart", (e) => {
+      console.info(e.changedTouches);
+      for (let touch of e.changedTouches) {
+        let context = Object.create(null);
+        contexts.set(touch.identifier, context);
+        recognize.start(touch, context);
+      }
+    });
+
+    element.addEventListener("touchmove", (e) => {
+      for (let touch of e.changedTouches) {
+        let context = contexts.get(touch.identifier);
+        recognize.move(touch, context);
+      }
+    });
+
+    element.addEventListener("touchend", (e) => {
+      for (let touch of e.changedTouches) {
+        let context = contexts.get(touch.identifier);
+        recognize.end(touch, context);
+        contexts.delete(touch.identifier);
+      }
+    });
+
+    element.addEventListener("touchcancel", (e) => {
+      for (let touch of e.changedTouches) {
+        let context = contexts.get(touch.identifier);
+        recognize.cancel(touch, context);
+        contexts.delete(touch.identifier);
+      }
+    });
+  }
+}
+
+export class Recognize {
+  constructor(dispatcher) {
+    this.dispatcher = dispatcher;
+  }
+
+  start(point, context) {
+    (context.startX = point.clientX), (context.startY = point.clientY);
+    context.points = [
+      {
+        t: Date.now(),
+        x: point.clientX,
+        y: point.clientY,
+      },
+    ];
+    context.isPan = false;
+    context.isTap = true;
+    context.isPress = false;
+    context.handler = setTimeout(() => {
+      context.isPan = false;
+      context.isTap = false;
+      context.isPress = true;
+      // 避免多次clearTimeout
+      context.handler = null;
+      this.dispatcher.dispatch("pressStart", {
+        startX: context.startX,
+        startY: context.startY,
+        clientX: point.clientX,
+        clientY: point.clientY,
+      });
+    }, 500);
+  }
+
+  move(point, context) {
+    // 判断是否移动10px
+    let dx = point.clientX - context.startX,
+      dy = point.clientY - context.startY;
+    if (!context.isPan && dx ** 2 + dy ** 2 > 100) {
+      context.isPan = true;
+      context.isTap = false;
+      context.isPress = false;
+      clearTimeout(context.handler);
+      this.dispatcher.dispatch("panStart", {
+        startX: context.startX,
+        startY: context.startY,
+        clientX: point.clientX,
+        clientY: point.clientY,
+        isHorizontal: Math.abs(dx) > Math.abs(dy),
+      });
+    }
+
+    if (context.isPan) {
+      // console.info('Pan', dx, dy)
+    }
+
+    context.points = context.points.filter(
+      (point) => Date.now() - point.t < 500
+    );
+    context.points.push({
+      t: Date.now(),
+      x: point.clientX,
+      y: point.clientY,
+    });
+  }
+
+  end(point, context) {
+    let dx = point.clientX - context.points[0].x,
+      dy = point.clientY - context.points[0].y;
+    if (context.isTap) {
+      this.dispatcher.dispatch("tap", {});
+      clearTimeout(context.handler);
+    }
+
+    if (context.isPress) {
+      this.dispatcher.dispatch("pressEnd", {
+        t: Date.now() - context.points[0].t,
+      });
+    }
+
+    context.points = context.points.filter(
+      (point) => Date.now() - point.t < 500
+    );
+    let velocity, distance;
+    if (!context.points.length) {
+      velocity = 0;
+    } else {
+      distance = Math.sqrt(dx ** 2 + dy ** 2);
+      velocity = distance / (Date.now() - context.points[0].t);
+    }
+    // console.info('velocity=>', context.points, distance, velocity)
+    if (velocity > 1.5) {
+      context.isFlick = true;
+      context.isPan = false;
+      this.dispatcher.dispatch("flick", {
+        startX: context.startX,
+        startY: context.startY,
+        clientX: point.clientX,
+        clientY: point.clientY,
+        isHorizontal: Math.abs(dx) > Math.abs(dy),
+        velocity: velocity,
+      });
+    } else {
+      context.isFlick = false;
+    }
+
+    if (context.isPan) {
+      this.dispatcher.dispatch("panEnd", {});
+    }
+  }
+
+  cancel(point, context) {
+    clearTimeout(context.handler);
+  }
+}
+
+export class Dispatch {
+  constructor(element) {
+    this.element = element;
+  }
+
+  dispatch(type, properties) {
+    let event = new Event(type);
+    for (let name in properties) {
+      event[name] = properties[name];
+    }
+    this.element.dispatchEvent(event);
+  }
+}
+
+export function enableGesture(element) {
+  return new Listener(element, new Recognize(new Dispatch(element)));
+}
+```
+
+```html
+<body></body>
+
+<script type="module">
+  import { enableGesture } from "./GestureModule.js";
+  enableGesture(document.documentElement);
+  let events = {
+    pressStart: {},
+    panStart: {},
+    tap: {},
+    pressEnd: {},
+    flick: {},
+    panEnd: {},
+  };
+  for (let eventName in events) {
+    document.documentElement.addEventListener(eventName, (e) => {
+      console.info(`${eventName} Trigger`, e);
+    });
+  }
+</script>
+```

@@ -1,7 +1,31 @@
 <body></body>
-<script>
+<!-- <script>
     document.body.oncontextmenu = function (event) {
         event.preventDefault()
     }
+    document.documentElement.addEventListener('singletap', e => {
+        console.info(e, 'tap trigger')
+    })
+    document.documentElement.addEventListener('flick', e => {
+        console.info(e, 'flick trigger')
+    })
 </script>
-<script src="./Gesture.js"></script>
+<script src="./Gesture.js"></script> -->
+
+<script type="module">
+    import { enableGesture } from './GestureModule.js'
+    enableGesture(document.documentElement)
+    let events = {
+        pressStart: {},
+        panStart: {},
+        tap: {},
+        pressEnd: {},
+        flick: {},
+        panEnd: {}
+    }
+    for (let eventName in events) {
+        document.documentElement.addEventListener(eventName, e => {
+            console.info(`${eventName} Trigger`, e)
+        })
+    }
+</script>

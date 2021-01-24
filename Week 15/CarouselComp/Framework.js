@@ -38,7 +38,7 @@ export class Component {
 
 class ElementWrap extends Component {
     constructor (type) {
-        this.root = documen.createElement(type)
+        this.root = document.createElement(type)
     }
 }
 
