@@ -1,17 +1,13 @@
-import { Component } from './Framework'
+import { Component, STATE } from './Framework'
 import { enableGesture } from './Gesture'
 import { Timeline, Animation } from './Animation'
 import { ease } from './Ease'
 
+import { STATE } from './Framework'
+
 export class Carousel extends Component {
     constructor () {
         super()
-        // super() 把render函数触发的时机往后移（到mountTo里面调用）
-        this.attributes = Object.create(null)
-    }
-    // 重写setAttribute函数
-    setAttribute (name, value) {
-        this.attributes[name] = value
     }
 
     render () {
@@ -141,9 +137,5 @@ export class Carousel extends Component {
         handler = setInterval(nextPicture, 3000)
 
         return this.root
-    }
-
-    mountTo (parent) {
-        parent.appendChild(this.render())
     }
 }

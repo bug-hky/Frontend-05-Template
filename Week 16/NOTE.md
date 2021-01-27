@@ -570,3 +570,62 @@ export class Carousel extends Component {
   }
 }
 ```
+
+## 抽象全局变量 & 状态属性
+
+- 把 Carousel 类里面的`this.attributes = Object.create(null)`移到 Component 类的 constructor 里面
+- 把 Carousel 类里面的 setAttribute 函数去掉，写入 Component 类
+- 把 Carousel 类里面的 mountTo 函数去掉，在 Component 类的 mountTo 函数里面加上判断
+
+```js
+export function createElement(type, attributes, ...children) {
+  let element;
+  if (typeof type === "string") element = new ElementWrap(type);
+  else element = new type();
+
+  for (let attrName in attributes) {
+    element.setAttribute(attrName, attributes[attrName]);
+  }
+
+  for (let child of children) {
+    if (typeof child === "string") {
+      child = new TextWrap(child);
+    }
+    element.appendChild(child);
+  }
+  return element;
+}
+
+export class Component {
+  constructor(type) {
+    // 1
+    this.attributes = Object.create(null);
+  }
+  // 2
+  setAttribute(name, value) {
+    this.attributes[name] = value;
+  }
+
+  appendChild(child) {
+    child.mountTo(this.root);
+  }
+
+  mountTo(parent) {
+    // 3
+    if (!this.root) this.render();
+    parent.appendChild(this.root);
+  }
+}
+
+class ElementWrap extends Component {
+  constructor(type) {
+    this.root = document.createElement(type);
+  }
+}
+
+class TextWrap extends Component {
+  constructor(content) {
+    this.root = document.createTextNode(content);
+  }
+}
+```
