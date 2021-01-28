@@ -29,7 +29,7 @@ export class Component {
     }
 
     setAttribute (name, value) {
-        this.attributes[name] = value
+        this[ATTRIBUTE][name] = value
     }
 
     appendChild (child) {
@@ -39,6 +39,10 @@ export class Component {
     mountTo (parent) {
         if (!this.root) this.render()
         parent.appendChild(this.root)
+    }
+    // 触发
+    triggerEvent (type, args) {
+        this[ATTRIBUTE]['on' + type.replace(/^[\S\s]/, str => str.toUpperCase())](new CustomEvent(type, { detail: args }))
     }
 }
 

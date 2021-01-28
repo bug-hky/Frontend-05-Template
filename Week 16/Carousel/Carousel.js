@@ -1,9 +1,9 @@
-import { Component, STATE } from './Framework'
+import { Component, STATE, ATTRIBUTE } from './Framework'
 import { enableGesture } from './Gesture'
 import { Timeline, Animation } from './Animation'
 import { ease } from './Ease'
 
-import { STATE } from './Framework'
+export { STATE, ATTRIBUTE } from './Framework'
 
 export class Carousel extends Component {
     constructor () {
@@ -13,9 +13,9 @@ export class Carousel extends Component {
     render () {
         this.root = document.createElement('div')
         this.root.classList.add('carousel')
-        for (let path of this.attributes.src) {
+        for (let item of this[ATTRIBUTE].data) {
             let child = document.createElement('div')
-            child.style.backgroundImage = `url(${path})`
+            child.style.backgroundImage = `url(${item.img})`
             this.root.appendChild(child)
         }
 
@@ -29,7 +29,8 @@ export class Carousel extends Component {
 
         let children = this.root.children
 
-        let position = 0
+        // let position = 0
+        this[STATE].position = 0
 
         let t = 0
 
@@ -44,10 +45,17 @@ export class Carousel extends Component {
             ax = ease(progress) * 500 - 500
         })
 
+        this.root.addEventListener('tap', event => {
+            this.triggerEvent('click', {
+                data: this[ATTRIBUTE].data[this[STATE].position],
+                position: this[STATE].position
+            })
+        })
+
         // PAN__________________________________________________
         this.root.addEventListener('pan', event => {
             let x = event.clientX - event.startX - ax
-            let current = position - ((x - x % 500) / 500)
+            let current = this[STATE].position - ((x - x % 500) / 500)
             for (let offset of [-1, 0, 1]) {
                 let pos = current + offset
                 pos = (pos % children.length + children.length) % children.length
@@ -65,7 +73,7 @@ export class Carousel extends Component {
             handler = setInterval(nextPicture, 3000)
             
             let x = event.clientX - event.startX - ax
-            let current = position - ((x - x % 500) / 500)
+            let current = this[STATE].position - ((x - x % 500) / 500)
             let direction = Math.round((x % 500) / 500)
 
             if (event.isFlick) {
@@ -93,16 +101,17 @@ export class Carousel extends Component {
                 ))
             }
 
-            position = position - ((x - x % 500) / 500) - direction
-            position = (position % children.length + children.length) % children.length
+            this[STATE].position = this[STATE].position - ((x - x % 500) / 500) - direction
+            this[STATE].position = (this[STATE].position % children.length + children.length) % children.length
+            this.triggerEvent('change', { position: this[STATE].position })
 
         })
 
         // AUTO-PLAY__________________________________________________
         let nextPicture = () => {
             let children = this.root.children
-            let nextIndex = (position + 1) % children.length
-            let current = children[position]
+            let nextIndex = (this[STATE].position + 1) % children.length
+            let current = children[this[STATE].position]
             let next = children[nextIndex]
 
             t = Date.now()
@@ -110,8 +119,8 @@ export class Carousel extends Component {
             timeLine.add(new Animation(
                 current.style,            // element 
                 'transform',              // property
-                - position * 500,         // start
-                - 500 - position * 500,   // end
+                - this[STATE].position * 500,         // start
+                - 500 - this[STATE].position * 500,   // end
                 500,                      // time
                 0,                        // delay
                 ease,                     // timingFunction
@@ -130,7 +139,8 @@ export class Carousel extends Component {
                 v => `translateX(${v}px)`
             ))
 
-            position = nextIndex
+            this[STATE].position = nextIndex
+            this.triggerEvent('change', { position: this[STATE].position })
 
         }
 

@@ -103,7 +103,7 @@ export class Animation {
         this.template = template
     }
     receiveTime (time) {
-        console.info('time =>', this.object[this.property])
+        // console.info('time =>', this.object[this.property])
         let range = (this.endValue - this.startValue)
         // 使用timingFunction处理动画的进度
         let progress = this.timingFunction(time / this.duration)
