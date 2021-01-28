@@ -9,12 +9,21 @@ export function createElement (type, attributes, ...children) {
         element.setAttribute(attrName, attributes[attrName])
     }
 
-    for (let child of children) {
-        if (typeof child === 'string') {
-            child = new TextWrap(child)
+
+    let processChildren = (children) => {
+        for (let child of children) {
+            if (Array.isArray(child)) {
+                processChildren(child)
+                continue
+            }
+            if (typeof child === 'string') {
+                child = new TextWrap(child)
+            }
+            element.appendChild(child)
         }
-        element.appendChild(child)
     }
+    processChildren(children)
+    
     return element
 }
 
@@ -26,6 +35,10 @@ export class Component {
         // this.root = this.render()
         this[ATTRIBUTE] = Object.create(null)
         this[STATE] = Object.create(null)
+    }
+
+    render () {
+        return this.root
     }
 
     setAttribute (name, value) {
@@ -48,12 +61,18 @@ export class Component {
 
 class ElementWrap extends Component {
     constructor (type) {
+        super()
         this.root = document.createElement(type)
+    }
+
+    setAttribute (name, value) {
+        this.root.setAttribute(name, value)
     }
 }
 
 class TextWrap extends Component {
     constructor (content) {
+        super()
         this.root = document.createTextNode(content)
     }
 }

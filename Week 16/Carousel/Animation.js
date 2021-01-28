@@ -9,7 +9,7 @@ const START_TIME = Symbol('start-time')
 const PAUSE_START = Symbol('pause-start')
 const PAUSE_TIME = Symbol('pause-time')
 
-export class Timeline {
+export class TimeLine {
     constructor() {
         // 添加animation队列
         this.state = 'Inited'
