@@ -1,0 +1,15 @@
+<html>
+  <head>
+    <title><%= title %></title>
+  </head>
+  <body>
+    <h1>
+      <% if (isSpa) { %>
+      <%= 'spa' %>
+      <% } else { %>
+      <%= 'mpa' %>
+      <% } %>
+    </h1>
+    <p><%= content %></p>
+  </body>  
+</html>
