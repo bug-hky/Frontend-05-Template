@@ -187,23 +187,32 @@
 
 - 使用 yeoman 而非 vue-cli 构建可以跑 vue 代码的环境
 
-  > 跟着课程的配置 webpack 打包后会报错
-  > `main.vue?./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[1]!./node_modules/vue-loader/dist/index.js??ruleSet[1].rules[3].use[0]:7 Uncaught TypeError: (0 , vue__WEBPACK_IMPORTED_MODULE_0__.withScopeId) is not a function`
+  > 跟着课程的配置 webpack 打包后会报错，没有找到答案
 
-### Webpack
+  1. webpack 打包报错
+
+  ![avatar](./BuildError.png)
+
+  2. 浏览器报错`main.vue?./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[1]!./node_modules/vue-loader/dist/index.js??ruleSet[1].rules[3].use[0]:7 Uncaught TypeError: (0 , vue__WEBPACK_IMPORTED_MODULE_0__.withScopeId) is not a function`
+
+  ![avatar](./Error.png)
+
+  原因分析: 根据打包的警告提示，没有在 vue 中找到 withScopeId 这个方法
+
+## Webpack
 
 最初是为 Node 而设计的一个打包工具，能力是把 Node 的代码打包成一个浏览器可用的 js 包
 它的核心设计理念就是最后打包出一个 js 文件，在 html 里面来引用 js 文件
 安装 webpack 需要 webpack-cli webpack 两个依赖
 如果想只在项目内本地安装 webpack 推荐使用 npx webpack
 
-## webpack 的 loader 是灵魂
+### webpack 的 loader 是灵魂
 
 从本质上来说 loader 只是做了文本转换，最后使用`import`语句或者是`require`函数，把文件加载进来，通过 rules 里面的 test 正则筛选匹配的文件使用对应的 loader， 也有多个 loader 处理同一个文件的情况
 
 loader 是 webpack 的核心机制，plugin 相比于 loader 更像是一个独立的机制
 
-## Babel - 一个独立的转换工具
+### Babel - 一个独立的转换工具
 
 作用是把新版本的 JS 转换成老版本的 JS 的一个工具
 

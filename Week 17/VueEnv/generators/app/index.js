@@ -32,7 +32,8 @@ module.exports = class extends Generator {
       "description": "",
       "main": "generator/app/index.js",
       "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1"
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "build": "webpack"
       },
       "author": "",
       "license": "ISC",
@@ -55,17 +56,6 @@ module.exports = class extends Generator {
       "css-loader",
       "vue-template-compiler",
       "copy-webpack-plugin"
-      // "webpack",
-      // "vue-loader",
-      // "@babel/core",
-      // "babel-loader",
-      // "webpack@4.44.2",
-      // "vue-template-compiler",
-      // "@vue/compiler-sfc",
-      // "html-webpack-plugin",
-      // "vue-style-loader",
-      // "css-loader",
-      // "copy-webpack-plugin"
     ], {'save-dev': true});
 
     this.fs.copyTpl(
