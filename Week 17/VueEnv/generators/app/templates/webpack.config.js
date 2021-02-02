@@ -1,4 +1,4 @@
-const { VueLoaderPlugin } = require('vue-loader')
+const VueLoaderPlugin = require('vue-loader/lib/plugin')
 const CopyPlugin = require('copy-webpack-plugin')
 
 module.exports = {
@@ -10,11 +10,11 @@ module.exports = {
           loader: 'vue-loader',
         },
         {
-            test: /\.css$/,
-            use: [
-                'vue-style-loader',
-                'css-loader'
-            ]
+          test: /\.css$/,
+          use: [
+              'vue-style-loader',
+              'css-loader'
+          ]
         }
       ]
     },

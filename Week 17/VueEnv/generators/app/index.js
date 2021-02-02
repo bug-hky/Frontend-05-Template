@@ -33,7 +33,7 @@ module.exports = class extends Generator {
       "main": "generator/app/index.js",
       "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
-        "build": "webpack"
+        "dev": "webpack"
       },
       "author": "",
       "license": "ISC",
@@ -51,7 +51,7 @@ module.exports = class extends Generator {
     ], {'save-dev': false});
     this.npmInstall([
       "webpack",
-      "vue-loader",
+      "vue-loader@15",
       "vue-style-loader",
       "css-loader",
       "vue-template-compiler",

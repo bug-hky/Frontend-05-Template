@@ -12,7 +12,7 @@
 
   1. 新建文件夹
 
-  ```cmd
+  ```bash
   mkdir ToolChain && cd ToolChain && npm init
   ```
 
@@ -187,17 +187,113 @@
 
 - 使用 yeoman 而非 vue-cli 构建可以跑 vue 代码的环境
 
-  > 跟着课程的配置 webpack 打包后会报错，没有找到答案
+```es6
+// index.js
+var Generator = require("yeoman-generator");
 
-  1. webpack 打包报错
+module.exports = class extends (
+  Generator
+) {
+  // The name `constructor` is important here
+  constructor(args, opts) {
+    // Calling the super constructor is important so our generator is correctly set up
+    super(args, opts);
 
-  ![avatar](./BuildError.png)
+    // Next, add your custom code
+    this.option("babel"); // This method adds support for a `--babel` flag
+  }
 
-  2. 浏览器报错`main.vue?./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[1]!./node_modules/vue-loader/dist/index.js??ruleSet[1].rules[3].use[0]:7 Uncaught TypeError: (0 , vue__WEBPACK_IMPORTED_MODULE_0__.withScopeId) is not a function`
+  async initPackages() {
+    let answers = await this.prompt([
+      {
+        type: "input",
+        name: "name",
+        message: "Your project title",
+        default: this.appname,
+      },
+      {
+        type: "input",
+        name: "author",
+        message: "Your project author",
+      },
+    ]);
 
-  ![avatar](./Error.png)
+    const pkgJson = {
+      name: answers.name,
+      version: "1.0.0",
+      description: "",
+      main: "generator/app/index.js",
+      scripts: {
+        test: 'echo "Error: no test specified" && exit 1',
+        dev: "webpack",
+      },
+      author: answers.author,
+      license: "ISC",
+      devDependencies: {},
+      dependencies: {},
+    };
 
-  原因分析: 根据打包的警告提示，没有在 vue 中找到 withScopeId 这个方法
+    // Extend or create package.json file in destination path
+    this.fs.extendJSON(this.destinationPath("package.json"), pkgJson);
+    this.npmInstall(["vue", "@vue/compiler-sfc"], { "save-dev": false });
+    this.npmInstall(
+      [
+        "webpack",
+        "vue-loader@15",
+        "vue-style-loader",
+        "css-loader",
+        "vue-template-compiler",
+        "copy-webpack-plugin",
+      ],
+      { "save-dev": true }
+    );
+
+    this.fs.copyTpl(
+      this.templatePath("index.vue"),
+      this.destinationPath("src/main.vue")
+    );
+
+    this.fs.copyTpl(
+      this.templatePath("webpack.config.js"),
+      this.destinationPath("webpack.config.js")
+    );
+
+    this.fs.copyTpl(
+      this.templatePath("main.js"),
+      this.destinationPath("src/main.js")
+    );
+
+    this.fs.copyTpl(
+      this.templatePath("index.html"),
+      this.destinationPath("src/index.html"),
+      {
+        title: answers.name,
+      }
+    );
+  }
+};
+```
+
+> 正常配置的 webpack 打包后会报错，没有找到答案
+
+1. webpack 打包报错
+
+![avatar](./BuildError.png)
+
+2. 浏览器报错`main.vue?./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[1]!./node_modules/vue-loader/dist/index.js??ruleSet[1].rules[3].use[0]:7 Uncaught TypeError: (0 , vue__WEBPACK_IMPORTED_MODULE_0__.withScopeId) is not a function`
+
+![avatar](./Error.png)
+
+原因分析: 根据打包的警告提示，没有在 vue 中找到 withScopeId 这个方法
+
+解决方案:
+
+1. 把 vue-loader 降级到 15.0.1 版本
+2. 然后会报错`Error: Cannot find module 'webpack/lib/RuleSet`
+   原因: webpack.config.js 中`const VueLoaderPlugin = require('vue-loader')`要改为`const VueLoaderPlugin = require('vue-loader/lib/plugin')`
+3. 浏览器会报错`Uncaught SyntaxError: Cannot use import statement outside a module`
+4. 确认没有问题，重新跑流程打包成功后，浏览器有报错信息`[Vue warn]: Cannot find element: #app`
+5. 原因是 js 文件放在 head 标签的里面，导致文件未加载完成就运行 js 文件，所以 js 找不到 #app，把 script 标签移出 head 标签，放到尾部
 
 ## Webpack
 
@@ -220,7 +316,7 @@ loader 是 webpack 的核心机制，plugin 相比于 loader 更像是一个独�
 
 ```
 {
-  "presets": ["#babel/preset-env"]
+  "presets": ["@babel/preset-env"]
 }
 ```
 
