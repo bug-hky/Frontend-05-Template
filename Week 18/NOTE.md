@@ -105,3 +105,5 @@ npm install --save-dev nyc
 ```
 
 3. 用 nyc 测试覆盖率`npm run coverage`
+
+## HTML-PARSER 单测编写
