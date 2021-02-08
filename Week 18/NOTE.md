@@ -107,3 +107,10 @@ npm install --save-dev nyc
 3. 用 nyc 测试覆盖率`npm run coverage`
 
 ## HTML-PARSER 单测编写
+
+引入`parser.js`和`layout.js`
+完善测试用例，尽可能的提示测试覆盖率以及查找相关代码的 BUG
+
+# 把测试相关的依赖补充进工具链中，完善工具链
+
+##

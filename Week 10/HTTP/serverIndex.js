@@ -19,7 +19,7 @@ http.createServer((request, response) => {
     response.setHeader('X-Foo', 'bar')
     response.writeHead(200, {'Content-Type': 'text/plain'})
     response.end(
-`<html maaa=a >
+`<html>
     <head>
         <style>
             .package {
@@ -46,7 +46,8 @@ http.createServer((request, response) => {
             </div>
         </div>
     </body>
-</html>`)
+</html>`
+)
 }).listen(8088)
 
 console.info('server started')

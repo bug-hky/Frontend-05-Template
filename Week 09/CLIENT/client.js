@@ -34,9 +34,9 @@ class Request {
 
     toString () {
        return `${this.method} ${this.path} HTTP/1.1\r
-       ${Object.keys(this.headers).map(key => `${key}: ${this.headers[key]}`).join('\r\n')}\r
-       \n
-       ${this.bodyText}`
+${Object.keys(this.headers).map(key => `${key}: ${this.headers[key]}`).join('\r\n')}\r
+\r
+${this.bodyText}`
     }
 
     // 三.send发送请求共分三步
@@ -211,7 +211,7 @@ class Request {
          this.current = this.WAITING_LENGTH
      }
      receiveChar (char) {
-         if (this.current === this.WAITING_LNEGTH) {
+         if (this.current === this.WAITING_LENGTH) {
              if (char === '\r') {
                  if (this.length === 0) {
                      this.isFinished = true
@@ -233,7 +233,7 @@ class Request {
          } else if (this.current === this.WAITING_NEW_LINE) {
              if (char === '\r') this.current = this.WAITING_NEW_LINE_END
          } else if (this.current === this.WAITING_NEW_LINE_END) {
-             if (char === '\n') this.current = this.WAITING_LNEGTH
+             if (char === '\n') this.current = this.WAITING_LENGTH
          }
      }
  }

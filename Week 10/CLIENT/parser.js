@@ -432,7 +432,7 @@ function selfClosingStartTag (c) {
 }
 
 module.exports.parseHTML = function parseHTML(html) {
-    console.info(html)
+    console.info('html:', html)
     let state = data
     for (let c of html) {
         state = state(c)

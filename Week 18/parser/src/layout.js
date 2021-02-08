@@ -1,18 +1,20 @@
-function getStyle () {
+function getStyle (element) {
     if (!element.style)
         element.style = {}
     for (let prop in element.computedStyle) {
         let p = element.computedStyle.value
         element.style[prop] = element.computedStyle[prop].value
+
+        if (element.style[prop].toString().match(/px$/)) {
+            element.style[prop] = parseInt(element.style[prop])
+        }
+    
+        if (element.style[prop].toString().match(/^[0-9\.]+$/)) {
+            element.style[prop] = parseInt(element.style[prop])
+        }
     }
 
-    if (element.style[peop].toString().match(/px$/)) {
-        element.style[prop] = parseInt(element.style[prop])
-    }
-
-    if (element.style[peop].toString().match(/^[0-9\.]+$/)) {
-        element.style[prop] = parseInt(element.style[prop])
-    }
+    return element.style
 }
 
 function layout (element) {

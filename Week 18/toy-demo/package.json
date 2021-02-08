@@ -1,0 +1,32 @@
+{
+  "name": "toy-demo",
+  "version": "1.0.0",
+  "description": "",
+  "main": "generator/app/index.js",
+  "scripts": {
+    "build": "webpack",
+    "test": "mocha --require @babel/register",
+    "coverage": "nyc mocha --require @babel/register"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@babel/core": "^7.12.13",
+    "@babel/preset-env": "^7.12.13",
+    "@babel/register": "^7.12.13",
+    "babel-loader": "^8.2.2",
+    "copy-webpack-plugin": "^7.0.0",
+    "css-loader": "^5.0.1",
+    "mocha": "^8.2.1",
+    "nyc": "^15.1.0",
+    "vue-loader": "^15.9.6",
+    "vue-style-loader": "^4.1.2",
+    "vue-template-compiler": "^2.6.12",
+    "webpack": "^5.21.2",
+    "webpack-cli": "^4.5.0"
+  },
+  "dependencies": {
+    "@vue/compiler-sfc": "^3.0.5",
+    "vue": "^2.6.12"
+  }
+}

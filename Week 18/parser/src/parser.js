@@ -1,74 +1,3 @@
-/*
-* HTML解析：----------------------------------------------------------------------
-* 第一步-parse模块的拆分
-*   1. parser单独拆成文件
-*   2. parser接收HTML文本，返回DOM树
-*
-* 第二步-使用FSM-有限状态机来实现HTML的分析:
-*   1. 使用FSM-有限状态机来实现HTML的分析
-*   2. 在HTML标准里面，已经规定了HTML的状态
-*   3. Toy-Browser只挑选其中一部分状态，完成一个最简版本
-*
-* 第三步-解析标签:
-*   1. 主要的标签有: 开始标签, 结束标签，自封闭标签
-*   2. 暂时忽略标签的attribute
-*
-* 第四步-创建元素:
-*   1. 在状态机中，除了状态迁移，我们还要加入业务逻辑
-*       (parser,js的业务逻辑: 创建token => 把字符加到token上 => emit token)
-*   2. 标签结束状态提交标签token
-*
-* 第五步-处理属性:
-*   1. 属性值分为单引号，双引号，无引号三种写法，因此需要较多的状态处理
-*   2. 处理属性的方式和标签类似
-*   3. 属性结束时，我们把属性加到标签Token上
-*
-* 语法分析：----------------------------------------------------------------------
-*
-* 第六步-token构建DOM树:（tree-construction的第一步）
-*   1. 使用栈结构从标签构建浏览器的DOM树
-*   2. 遇到开始标签时创建元素并入栈，遇到结束标签时出栈
-*   3. 子封闭节点可视为如战后立刻出栈
-*   4. 任何元素的父元素是它入栈前的栈顶
-*
-* 第七步-文本节点追加到DOM树:（tree-construction的第二步）
-*   1. 文本节点与自封闭标签处理标签
-*   2. 多文本节点需要合并
-*
-* CSS Computing ----------------------------------------------------------------
-*
-* 第一步-遇到style标签，把CSS规则保存起来
-*   1. 遇到style标签，把CSS规则保存起来
-*   2. 调用CSS Parser 来分析CSS规则（需要仔细研究CSS AST 格式）
-*
-* 第二步-添加调用
-*   1. 计算CSS时机是startTag时
-*   2. 当创建一个元素后，立即计算CSS
-*   3. 理论上，当我们分析一个元素时，所有的CSS规则已经收集完毕，但在真实的浏览器中，可能遇到写在body的style标签，需要重新CSS计算的情况，这里我们忽略
-*
-* 第三步-获取父元素序列
-*   1. 在ComputeCSS函数中，我们必须知道元素的所有父元素才能判断元素与规则是否匹配
-*   2. 我们从上一个步骤的stack，可以获取本元素的所有父元素
-*   3. 首先获取的是当前元素，所以计算与父元素相匹配的顺序是从内向外的
-*
-* 第四步-选择器与元素匹配
-*   1. 选择器也要由当前元素从内向外排列
-*   2. 复杂选择器拆成单个元素的选择器，用循环匹匹厄父元素队列
-*
-* 第五步-计算选择器与元素匹配
-*   1. 根据选择器的类型和元素属性，计算是否与当前元素匹配
-*   2. 实际浏览器重要处理复合选择器（实现复合选择器，实现支持空格的class选择器）
-*
-* 第六步-生成computed属性
-*   1. 一旦选择器匹配上，就应用选择器到元素上，形成computedStyle
-*
-* 第七步-specificity的计算逻辑
-*   1. CSS规则根据specificity和后来优先规则覆盖
-*   2. specificity是个四元组，越左权重越高
-*   3. 一个CSS规则的specificity根据包含的简单选择器相加而成
-*
-*  */
-
 const CSS = require('css')
 const EOF = Symbol('EOF') // End Of File
 const SPACE_ERG = /^[\t\n\f ]$/
@@ -87,13 +16,13 @@ let rules = []
 
 function addCSSRules (cssText) {
     var ast = CSS.parse(cssText)
-    console.info('css ast', JSON.stringify(ast, null, '    '))
-    rules.push(...ast.styleSheet.rules)
+    // console.info('css ast: ', typeof ast, ast.type)
+    rules.push(...ast.stylesheet.rules)
 }
 
 function match (element, selector) {
     // 若没有选择器或者是文本节点
-    if (!selector || !element.attribute) return false
+    if (!selector || !element.attributes) return false
     var attr = null
     if (selector.charAt(0) === '#') {
         attr = element.attributes.filter(attr => attr.name === 'id')[0]
@@ -111,9 +40,9 @@ function specificity (selector) {
     var p = Array(4).fill(0)
     var selectorParts = selector.split(' ')
     for (var part of selectorParts) {
-        if (part.chatAt(0) === '#') {
+        if (part.charAt(0) === '#') {
             p[1] += 1
-        } else if (part.chatAt(0) === '#') {
+        } else if (part.charAt(0) === '.') {
             p[2] += 1
         } else {
             p[3] += 1
@@ -153,18 +82,8 @@ function computeCSS (element) {
             }
         }
 
-        if (j >= selectorParts.length) matched = true
-
-        if (matched) {
+        if (j >= selectorParts.length) {
             console.info('Element', element, 'matched rule', rule)
-            // 第六步代码
-            // var computedStyle = element.computedStyle
-            // for (var declaration of rule.declarations) {
-            //     if (!computedStyle[declaration.property])
-            //         computedStyle[declaration.property] = {}
-            //     computedStyle[declaration.property].value = declaration.value
-            // }
-            // console.info('element.computedStyle', element.computedStyle)
 
             var sp = specificity(rule.selectors[0])
             var computedStyle = element.computedStyle
@@ -185,7 +104,7 @@ function computeCSS (element) {
 }
 
 function emit (token) {
-    console.info(token)
+    // console.info(token)
     // if (token.type === 'text') return
     let top = stack[stack.length - 1]
     if (token.type === 'startTag') {
@@ -193,14 +112,14 @@ function emit (token) {
         let element = {
             type: 'element',
             children: [],
-            attribute: []
+            attributes: []
         }
 
         element.tagName = token.tagName
 
         for (let p in token) {
             if (p !== 'type' && p !== 'tagName') {
-                element.attribute.push({
+                element.attributes.push({
                     name: p,
                     value: token[p]
                 })
@@ -266,6 +185,7 @@ function tagOpen(c) {
         }
         return tagName(c)
     } else {
+        // 标签以特殊字符开头
         return
     }
 }
@@ -278,6 +198,7 @@ function endTagOpen (c) {
         }
         return tagName(c)
     } else if (c === '>') {
+        emit(currentToken)
     } else if (c === EOF) {
     } else {
     }
@@ -292,8 +213,11 @@ function tagName(c) {
         currentToken.tagName += c//.toLowerCase()
         return tagName
     } else if (c === '>') {
+        emit(currentToken)
         return data
     } else {
+        // 标签名称里面包含特殊字符才会触发这个else
+        currentToken.tagName += c
         return tagName
     }
 }
@@ -302,13 +226,14 @@ function beforeAttributeName (c) {
     if (c.match(SPACE_ERG)) {
         return beforeAttributeName
     } else if (c ==='/' || c === '>' || c === EOF) {
-        return afterAttributeName
+        return afterAttributeName(c)
     } else if (c === '=') {
         // return error
     } else {
         currentAttribute = {
             type: '',
-            value: ''
+            value: '',
+            name: ''
         }
         return attributeName(c)
     }
@@ -425,19 +350,44 @@ function afterAttributeName (c) {
 function selfClosingStartTag (c) {
     if (c === '>') {
         currentToken.isSelfClosing = true
+        emit(currentToken)
         return data
-    } else if (c === 'EOF') {
-    } else {
     }
 }
 
 // module.exports.parseHTML = function parseHTML(html) {
 export function parseHTML (html) {
-    console.info(html)
     let state = data
     for (let c of html) {
         state = state(c)
     }
     state = state(EOF)
-    return state
+    return stack[0]
 }
+
+// let htmlText = `<html>
+// <head>
+//   <title>vue-g</title>
+//   <style>
+//     .test-link {
+//         color: red;
+//         font-size: 20px;
+//     }
+//   </style>
+// </head>
+// <body>
+//   <div%
+//     data-range
+//     isError='false'
+//     id="app"
+//     class="test-link"
+//   >
+//   </div%>
+//   <br/>
+//   <img src="https://zh.wikipedia.org/wiki/File:Andy_Lau_(cropped).jpg" />
+// </body>
+// </html>`
+
+// let res = parseHTML(htmlText)
+
+// console.info('cur-page', res)

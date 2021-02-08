@@ -28,14 +28,14 @@ class Request {
         else if (this.headers['Content-Type'] === 'application/x-www-form-urlencoded')
             this.bodyText = Object.keys(this.body).map(key => `${key}=${encodeURIComponent(this.body[key])}`).join('&')
 
-        this.headers['Content-Length'] = this.bodyText.length
+        this.headers['Content-Length'] = this.bodyText.length // 这一步不传会是一个非法的http请求
     }
 
     toString () {
        return `${this.method} ${this.path} HTTP/1.1\r
-       ${Object.keys(this.headers).map(key => `${key}: ${this.headers[key]}`).join('\r\n')}\r
-       \n
-       ${this.bodyText}`
+${Object.keys(this.headers).map(key => `${key}: ${this.headers[key]}`).join('\r\n')}\r
+\r
+${this.bodyText}`
     }
 
     // 三.send发送请求共分三步
@@ -56,15 +56,19 @@ class Request {
                     // 构造函的内容
                     host: this.host,
                     port: this.port
-                }, (e) => {
-                    console.info('connection', e)
-                    connection.write(this.toString())
                 })
             }
 
+            connection.on('connect', (data) => {
+                let content = this.toString()
+                console.info('connection', content)
+                connection.write(content)
+            })
+
             connection.on('data', (data) => {
-                console.info('response data', data.toString())
-                parser.receive(data.toString())
+                let receiveData = data.toString()
+                console.info('response data', receiveData)
+                parser.receive(receiveData)
                 if (parser.isFinished) {
                     resolve(parser.response)
                     connection.end()
@@ -75,7 +79,6 @@ class Request {
                 reject(err)
                 connection.end()
             })
-            resolve('')
         })
     }
  }
@@ -143,7 +146,6 @@ class Request {
         }
     }
     receiveChar (char) {
-        console.info('char', char)
         if (this.current === this.WAITING_STATUS_LINE) {
             if (char === '\r') {
                 this.current = this.WAITING_STATUS_LINE_END
@@ -160,7 +162,7 @@ class Request {
             } else if (char === '\r') {
                 this.current = this.WAITING_HEADER_BLOCK_END
                 if (this.headers['Transfer-Encoding'] === 'chunked')
-                    this.bodyParser = new TrunkedBodyParser()
+                    this.bodyParser = new TrunkedBodyParser
             } else {
                 this.headerName += char
             }
@@ -210,7 +212,7 @@ class Request {
          this.current = this.WAITING_LENGTH
      }
      receiveChar (char) {
-         if (this.current === this.WAITING_LNEGTH) {
+         if (this.current === this.WAITING_LENGTH) {        
              if (char === '\r') {
                  if (this.length === 0) {
                      this.isFinished = true
@@ -232,13 +234,13 @@ class Request {
          } else if (this.current === this.WAITING_NEW_LINE) {
              if (char === '\r') this.current = this.WAITING_NEW_LINE_END
          } else if (this.current === this.WAITING_NEW_LINE_END) {
-             if (char === '\n') this.current = this.WAITING_LNEGTH
+             if (char === '\n') this.current = this.WAITING_LENGTH
          }
      }
  }
 
 // 使用立即执行的函数表达式时，可以利用void运算符让JS引擎把function关键字识别成函数表达式而不是语句。
-async function rqs () {
+void async function () {
     let request = new Request({
         method: 'POST', // http协议
         host: '127.0.0.1', // IP层
@@ -256,6 +258,4 @@ async function rqs () {
 
     let response = await request.send()
     console.info(response)
-}
-
-rqs()
+}()
